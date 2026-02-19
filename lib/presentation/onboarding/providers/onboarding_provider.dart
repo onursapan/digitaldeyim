@@ -1,0 +1,138 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/core_providers.dart';
+import '../../../domain/entities/sector.dart';
+import '../../../domain/entities/user_profile.dart';
+
+class OnboardingState {
+  final int currentStep;
+  final String? selectedSectorId;
+  final List<Sector> availableSectors;
+  final bool isLoadingSectors;
+  final String? businessName;
+  final List<String> topProducts;
+  final BusinessVibe? vibe;
+  final TargetAudience? audience;
+  final bool isAnalyzingVoice;
+  final String? brandToneAnalysis;
+
+  const OnboardingState({
+    this.currentStep = 0,
+    this.selectedSectorId,
+    this.availableSectors = const [],
+    this.isLoadingSectors = false,
+    this.businessName,
+    this.topProducts = const [],
+    this.vibe,
+    this.audience,
+    this.isAnalyzingVoice = false,
+    this.brandToneAnalysis,
+  });
+
+  bool get canProceedToDirector =>
+      selectedSectorId != null &&
+      businessName != null &&
+      businessName!.isNotEmpty &&
+      topProducts.isNotEmpty &&
+      vibe != null &&
+      audience != null;
+
+  OnboardingState copyWith({
+    int? currentStep,
+    String? selectedSectorId,
+    List<Sector>? availableSectors,
+    bool? isLoadingSectors,
+    String? businessName,
+    List<String>? topProducts,
+    BusinessVibe? vibe,
+    TargetAudience? audience,
+    bool? isAnalyzingVoice,
+    String? brandToneAnalysis,
+  }) {
+    return OnboardingState(
+      currentStep: currentStep ?? this.currentStep,
+      selectedSectorId: selectedSectorId ?? this.selectedSectorId,
+      availableSectors: availableSectors ?? this.availableSectors,
+      isLoadingSectors: isLoadingSectors ?? this.isLoadingSectors,
+      businessName: businessName ?? this.businessName,
+      topProducts: topProducts ?? this.topProducts,
+      vibe: vibe ?? this.vibe,
+      audience: audience ?? this.audience,
+      isAnalyzingVoice: isAnalyzingVoice ?? this.isAnalyzingVoice,
+      brandToneAnalysis: brandToneAnalysis ?? this.brandToneAnalysis,
+    );
+  }
+}
+
+class OnboardingNotifier extends StateNotifier<OnboardingState> {
+  final Ref _ref;
+
+  OnboardingNotifier(this._ref) : super(const OnboardingState()) {
+    _loadSectors();
+  }
+
+  Future<void> _loadSectors() async {
+    state = state.copyWith(isLoadingSectors: true);
+    final sectors =
+        await _ref.read(sectorDatasourceProvider).loadAllSectors();
+    state = state.copyWith(
+      availableSectors: sectors,
+      isLoadingSectors: false,
+    );
+  }
+
+  void selectSector(String sectorId) {
+    state = state.copyWith(selectedSectorId: sectorId, currentStep: 1);
+  }
+
+  void setBusinessName(String name) =>
+      state = state.copyWith(businessName: name);
+
+  void addProduct(String product) {
+    if (state.topProducts.length < 3 && product.isNotEmpty) {
+      state = state.copyWith(topProducts: [...state.topProducts, product]);
+    }
+  }
+
+  void removeProduct(String product) {
+    state = state.copyWith(
+      topProducts: state.topProducts.where((p) => p != product).toList(),
+    );
+  }
+
+  void setVibe(BusinessVibe vibe) => state = state.copyWith(vibe: vibe);
+  void setAudience(TargetAudience audience) =>
+      state = state.copyWith(audience: audience);
+
+  void nextStep() => state = state.copyWith(currentStep: state.currentStep + 1);
+  void prevStep() {
+    if (state.currentStep > 0) {
+      state = state.copyWith(currentStep: state.currentStep - 1);
+    }
+  }
+
+  Future<void> analyzeVoiceRecording(String audioPath) async {
+    state = state.copyWith(isAnalyzingVoice: true);
+
+    // Faz 1: Simüle edilmiş analiz
+    // Faz 2: Gerçek ses transkripsiyon + Gemini analizi
+    await Future.delayed(const Duration(seconds: 2));
+
+    final geminiService = _ref.read(geminiServiceProvider);
+    final analysis = await geminiService.analyzeBrandTone(
+      'Merhaba, ben ${state.businessName ?? "esnaf"}, '
+      'size ${state.topProducts.join(", ")} sunuyorum.',
+      state.selectedSectorId ?? '',
+    );
+
+    state = state.copyWith(
+      isAnalyzingVoice: false,
+      brandToneAnalysis: analysis,
+      currentStep: state.currentStep + 1,
+    );
+  }
+}
+
+final onboardingProvider =
+    StateNotifierProvider<OnboardingNotifier, OnboardingState>(
+  (ref) => OnboardingNotifier(ref),
+);

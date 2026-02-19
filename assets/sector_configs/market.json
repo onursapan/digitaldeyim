@@ -1,0 +1,45 @@
+{
+  "id": "market",
+  "name": "Market",
+  "emoji": "🛒",
+  "directorBrief": {
+    "hook": {
+      "id": "market_hook",
+      "title": "Zoom-Punch Çekimi",
+      "instruction": "Ürünün 1 metre uzağından başla, hızla yaklaş (zoom-punch hareketi). Ürün kadrajı doldurunca dur.",
+      "overlayHint": "Hızla yaklaş — dur!",
+      "durationSeconds": 5,
+      "motion": "zoomPunch"
+    },
+    "detail": {
+      "id": "market_detail",
+      "title": "Fiyat Etiketi",
+      "instruction": "Fiyat etiketini net bir şekilde kadrajla, 2 saniye sabit tut. Yazı okunaklı olmalı.",
+      "overlayHint": "Fiyat net görünsün",
+      "durationSeconds": 4,
+      "motion": "still"
+    },
+    "exit": {
+      "id": "market_exit",
+      "title": "Alış Anı",
+      "instruction": "Ürünü raftan bir müşteri alıyormuş gibi çek. El hareketi doğal ve yavaş olsun.",
+      "overlayHint": "El hareketi doğal görünsün",
+      "durationSeconds": 6,
+      "motion": "still"
+    },
+    "checklist": {
+      "minLux": 300.0,
+      "maxShake": 0.5,
+      "lightingTip": "Raf ışıkları yeterliyse ekstra ışık gerekmez. Ürünün gölge bırakmamasına dikkat et.",
+      "backgroundTip": "Ürünü raftan biraz öne çek, arka plandaki dağınıklık bulanık görünecek."
+    }
+  },
+  "visualStyle": {
+    "primaryColorHex": "#FF6B35",
+    "accentColorHex": "#FFFFFF",
+    "fontStyle": "bold",
+    "musicMood": "upbeat",
+    "cutRhythm": 2.5,
+    "shotstackTemplateIds": ["market_v1", "market_promo_v1"]
+  }
+}

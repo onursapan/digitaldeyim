@@ -1,0 +1,45 @@
+{
+  "id": "gelinlik",
+  "name": "Gelinlikçi",
+  "emoji": "👰",
+  "directorBrief": {
+    "hook": {
+      "id": "gelinlik_hook",
+      "title": "Giriş Çekimi",
+      "instruction": "Gelinliğin önünde dur, kamerayı yavaşça aşağıdan yukarıya kaydır. Gelinliğin tüm siluetini kadrajla.",
+      "overlayHint": "Kamerayı yavaş yukarı kaydır",
+      "durationSeconds": 8,
+      "motion": "slowUp"
+    },
+    "detail": {
+      "id": "gelinlik_detail",
+      "title": "Detay Çekimi",
+      "instruction": "Dantel veya işleme detayına 10 cm yaklaş ve tamamen sabit dur. Telefonu iki elinle tut.",
+      "overlayHint": "10 cm yak. — tamamen sabit!",
+      "durationSeconds": 6,
+      "motion": "still"
+    },
+    "exit": {
+      "id": "gelinlik_exit",
+      "title": "Çıkış Çekimi",
+      "instruction": "Gelinliğin etrafında yavaşça yarım daire çiz. Kadraj her zaman gelinliğin üzerinde kalsın.",
+      "overlayHint": "Yarım daire — yavaş ve akıcı",
+      "durationSeconds": 10,
+      "motion": "halfCircle"
+    },
+    "checklist": {
+      "minLux": 400.0,
+      "maxShake": 0.3,
+      "lightingTip": "Gelinlikler için yumuşak, önden gelen beyaz ışık şart. Güneş ışığını direkt almaktan kaçın.",
+      "backgroundTip": "Arka plan sade ve açık renk olmalı. Gelinliği öne çıkaran temiz bir zemin seç."
+    }
+  },
+  "visualStyle": {
+    "primaryColorHex": "#F5F0EB",
+    "accentColorHex": "#C9A96E",
+    "fontStyle": "elegant",
+    "musicMood": "cinematic",
+    "cutRhythm": 4.0,
+    "shotstackTemplateIds": ["gelinlik_v1", "gelinlik_luxury_v1"]
+  }
+}
