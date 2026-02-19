@@ -23,29 +23,41 @@ class ShotstackService {
   late final Dio _dio;
 
   ShotstackService() {
+    // Shotstack API: x-api-key header (Authorization: Bearer değil)
     _dio = ApiClient.create(
       baseUrl: AppConfig.shotstackBaseUrl,
       apiKey: AppConfig.shotstackApiKey,
+      apiKeyHeader: 'x-api-key',
+      apiKeyPrefix: '',
     );
   }
 
-  /// Render işini kuyruğa alır, jobId döner.
-  Future<String> submitRender(Map<String, dynamic> timeline) async {
+  /// Render işini kuyruğa alır; başarıda jobId, hata halinde null döner.
+  /// Endpoint: POST /v1/render (sandbox env)
+  Future<String?> submitRender(Map<String, dynamic> timeline) async {
     try {
-      final response = await _dio.post('/render', data: timeline);
-      final jobId = response.data['response']['id'] as String;
-      appLogger.d('[Shotstack] Job submitted: $jobId');
-      return jobId;
+      final env = AppConfig.shotstackEnv; // 'stage' veya 'v1'
+      final response = await _dio.post('/$env/render', data: timeline);
+      final id = response.data?['response']?['id'] as String?;
+      if (id == null) {
+        appLogger.e('[Shotstack] Missing id in response: ${response.data}');
+        return null;
+      }
+      appLogger.d('[Shotstack] Job submitted: $id');
+      return id;
     } on DioException catch (e) {
-      appLogger.e('[Shotstack] Submit error', error: e);
-      // Faz 1: API yoksa simüle et
-      return 'local_sim_${DateTime.now().millisecondsSinceEpoch}';
+      appLogger.e(
+        '[Shotstack] Submit error: ${e.response?.statusCode} — ${e.response?.data}',
+        error: e,
+      );
+      return null;
     }
   }
 
-  /// Job durumunu sorgular (polling için kullanılır)
+  /// Job durumunu sorgular.
+  /// Endpoint: GET /v1/render/{id}
   Future<RenderJob> checkStatus(String jobId) async {
-    // Faz 1 local simulation: 3 saniye sonra "done" döndür
+    // Local simülasyon (gerçek API key yokken Phase 1 fallback)
     if (jobId.startsWith('local_sim_')) {
       await Future.delayed(const Duration(seconds: 3));
       return RenderJob(
@@ -56,21 +68,34 @@ class ShotstackService {
     }
 
     try {
-      final response = await _dio.get('/render/$jobId');
-      final data = response.data['response'];
-      final statusStr = data['status'] as String;
+      final env = AppConfig.shotstackEnv;
+      final response = await _dio.get('/$env/render/$jobId');
+      final data = response.data?['response'] as Map<String, dynamic>?;
+
+      if (data == null) {
+        return RenderJob(
+          jobId: jobId,
+          status: RenderStatus.failed,
+          errorMessage: 'Geçersiz API yanıtı.',
+        );
+      }
+
+      final statusStr = data['status'] as String? ?? 'failed';
+      final url = data['url'] as String?;
+
+      appLogger.d('[Shotstack] Status for $jobId: $statusStr  url=$url');
 
       return RenderJob(
         jobId: jobId,
         status: _parseStatus(statusStr),
-        videoUrl: data['url'] as String?,
+        videoUrl: url,
       );
     } on DioException catch (e) {
       appLogger.e('[Shotstack] Status check error', error: e);
       return RenderJob(
         jobId: jobId,
         status: RenderStatus.failed,
-        errorMessage: 'Durum sorgulanamadı.',
+        errorMessage: 'Durum sorgulanamadı: ${e.message}',
       );
     }
   }
