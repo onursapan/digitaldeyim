@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "349706854240",
+    "project_id": "digitaldeyim",
+    "storage_bucket": "digitaldeyim.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349706854240:android:c9c4b9a6f10bb391bb4805",
+        "android_client_info": {
+          "package_name": "com.example.digitaldeyim"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAywuPLNiIXyHBh0FJ6jF_B8fUveegrjWA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
