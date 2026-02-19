@@ -8,6 +8,10 @@ class ApiClient {
     String apiKeyHeader = 'Authorization',
     String apiKeyPrefix = 'Bearer',
   }) {
+    // Prefix boşsa doğrudan API key'i kullan (örn. Shotstack x-api-key)
+    final headerValue =
+        apiKeyPrefix.isEmpty ? apiKey : '$apiKeyPrefix $apiKey';
+
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -15,7 +19,7 @@ class ApiClient {
         receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
-          apiKeyHeader: '$apiKeyPrefix $apiKey',
+          apiKeyHeader: headerValue,
         },
       ),
     );

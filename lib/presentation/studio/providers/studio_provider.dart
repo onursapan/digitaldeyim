@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/agents/prompter_agent.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/user_profile_provider.dart';
+import '../../../core/utils/logger.dart';
 import '../../../data/repositories/shotstack_service.dart';
 import '../../../domain/entities/shoot_session.dart';
 import '../../../domain/entities/user_profile.dart';
@@ -27,6 +28,9 @@ class StudioState {
   final String? currentJobId;
   final String? errorMessage;
   final int creditsRequired;
+  /// Shotstack render için hazırlanmış timeline JSON.
+  /// preparePreview'da üretilir, approveAndRender'da doğrudan kullanılır.
+  final Map<String, dynamic>? shotstackJson;
 
   const StudioState({
     this.phase = StudioPhase.idle,
@@ -37,6 +41,7 @@ class StudioState {
     this.currentJobId,
     this.errorMessage,
     this.creditsRequired = 1,
+    this.shotstackJson,
   });
 
   bool get canRequestRender => phase == StudioPhase.awaitingApproval;
@@ -50,6 +55,7 @@ class StudioState {
     String? currentJobId,
     String? errorMessage,
     int? creditsRequired,
+    Map<String, dynamic>? shotstackJson,
   }) {
     return StudioState(
       phase: phase ?? this.phase,
@@ -60,6 +66,7 @@ class StudioState {
       currentJobId: currentJobId ?? this.currentJobId,
       errorMessage: errorMessage,
       creditsRequired: creditsRequired ?? this.creditsRequired,
+      shotstackJson: shotstackJson ?? this.shotstackJson,
     );
   }
 }
@@ -76,14 +83,17 @@ class StudioNotifier extends StateNotifier<StudioState> {
   }) async {
     state = state.copyWith(phase: StudioPhase.buildingPrompt, session: session);
 
-    // 1. Prompter Agent: Gemini prompt + Shotstack JSON oluştur
-    // promptOutput.shotstackJson → approveAndRender'da kullanılır
+    // 1. Prompter Agent: Gemini prompt + Shotstack timeline JSON oluştur
+    //    shotstackJson state'e kaydedilir → approveAndRender'da yeniden kullanılır.
     final prompter = _ref.read(prompterAgentProvider);
-    await prompter.process(
+    final promptOutput = await prompter.process(
       PrompterInput(userProfile: userProfile, session: session),
     );
 
-    state = state.copyWith(phase: StudioPhase.generatingCaption);
+    state = state.copyWith(
+      phase: StudioPhase.generatingCaption,
+      shotstackJson: promptOutput.shotstackJson,
+    );
 
     // 2. Gerçek Gemini API çağrısı — caption üret
     final gemini = _ref.read(geminiServiceProvider);
@@ -93,7 +103,7 @@ class StudioNotifier extends StateNotifier<StudioState> {
       clipPaths: session.clips.map((c) => c.localPath).toList(),
     );
 
-    // 3. Local draft simülasyonu — Phase 2'de FFmpeg local render
+    // 3. Draft önizleme yolu — Phase 2'de FFmpeg local render
     await Future.delayed(const Duration(seconds: 1));
     const draftPath = 'local://draft_simulation.mp4';
 
@@ -107,20 +117,37 @@ class StudioNotifier extends StateNotifier<StudioState> {
     state = state.copyWith(phase: StudioPhase.awaitingApproval);
   }
 
-  /// Kullanıcı draft'ı onayladı — cloud render başlat
+  /// Kullanıcı draft'ı onayladı — cloud render başlat.
+  /// preparePreview'da hazırlanan shotstackJson kullanılır (çift çağrı yok).
   Future<void> approveAndRender({
     required ShootSession session,
     required UserProfile userProfile,
   }) async {
     state = state.copyWith(phase: StudioPhase.rendering);
 
-    final prompter = _ref.read(prompterAgentProvider);
-    final promptOutput = await prompter.process(
-      PrompterInput(userProfile: userProfile, session: session),
-    );
+    // State'te kayıtlı JSON yoksa yeniden üret (edge case: rejectDraft sonrası)
+    Map<String, dynamic> renderJson;
+    if (state.shotstackJson != null) {
+      renderJson = state.shotstackJson!;
+    } else {
+      final prompter = _ref.read(prompterAgentProvider);
+      final output = await prompter.process(
+        PrompterInput(userProfile: userProfile, session: session),
+      );
+      renderJson = output.shotstackJson;
+    }
 
     final shotstack = _ref.read(shotstackServiceProvider);
-    final jobId = await shotstack.submitRender(promptOutput.shotstackJson);
+    final jobId = await shotstack.submitRender(renderJson);
+
+    if (jobId == null) {
+      // Shotstack API hatası — local simülasyon ile devam et
+      final simId = 'local_sim_${DateTime.now().millisecondsSinceEpoch}';
+      appLogger.w('[Studio] Shotstack submit failed, falling back to sim: $simId');
+      state = state.copyWith(currentJobId: simId);
+      _startPolling(simId);
+      return;
+    }
 
     state = state.copyWith(currentJobId: jobId);
     _startPolling(jobId);
