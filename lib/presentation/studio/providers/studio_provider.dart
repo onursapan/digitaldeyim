@@ -76,20 +76,24 @@ class StudioNotifier extends StateNotifier<StudioState> {
   }) async {
     state = state.copyWith(phase: StudioPhase.buildingPrompt, session: session);
 
-    // 1. Prompter Agent: JSON + Gemini prompt oluştur
+    // 1. Prompter Agent: Gemini prompt + Shotstack JSON oluştur
+    // promptOutput.shotstackJson → approveAndRender'da kullanılır
     final prompter = _ref.read(prompterAgentProvider);
-    final promptOutput = await prompter.process(
+    await prompter.process(
       PrompterInput(userProfile: userProfile, session: session),
     );
 
     state = state.copyWith(phase: StudioPhase.generatingCaption);
 
-    // 2. Gemini: Açıklama metni üret
+    // 2. Gerçek Gemini API çağrısı — caption üret
     final gemini = _ref.read(geminiServiceProvider);
-    final caption = await gemini.generateCaption(promptOutput.geminiPrompt);
+    final caption = await gemini.generateShotstackPrompt(
+      profile: userProfile,
+      sector: session.sector,
+      clipPaths: session.clips.map((c) => c.localPath).toList(),
+    );
 
-    // 3. Local draft simülasyonu (Faz 1)
-    // Faz 2'de gerçek FFmpeg lokal render buraya gelir
+    // 3. Local draft simülasyonu — Phase 2'de FFmpeg local render
     await Future.delayed(const Duration(seconds: 1));
     const draftPath = 'local://draft_simulation.mp4';
 
@@ -122,23 +126,21 @@ class StudioNotifier extends StateNotifier<StudioState> {
     _startPolling(jobId);
   }
 
-  /// B2: Mevcut caption'ı yeni bir Gemini isteğiyle yeniden üret.
+  /// Mevcut caption'ı yeni bir Gemini isteğiyle yeniden üret.
   Future<void> regenerateCaption({required UserProfile userProfile}) async {
     if (state.session == null) return;
 
-    // Spinner göster, eski caption'ı temizle
     state = state.copyWith(
       phase: StudioPhase.generatingCaption,
       generatedCaption: null,
     );
 
-    final prompter = _ref.read(prompterAgentProvider);
-    final out = await prompter.process(
-      PrompterInput(userProfile: userProfile, session: state.session!),
-    );
-
     final gemini = _ref.read(geminiServiceProvider);
-    final caption = await gemini.generateCaption(out.geminiPrompt);
+    final caption = await gemini.generateShotstackPrompt(
+      profile: userProfile,
+      sector: state.session!.sector,
+      clipPaths: state.session!.clips.map((c) => c.localPath).toList(),
+    );
 
     state = state.copyWith(
       phase: StudioPhase.awaitingApproval,
@@ -154,8 +156,8 @@ class StudioNotifier extends StateNotifier<StudioState> {
       if (job.status == RenderStatus.done) {
         _pollingTimer?.cancel();
 
-        // B1: Render tamamlandı → kredit düş
-        _ref.read(userProfileProvider.notifier).deductCredits(1);
+        // Render tamamlandı → kredit düş (async)
+        await _ref.read(userProfileProvider.notifier).deductCredits(1);
 
         state = state.copyWith(
           phase: StudioPhase.completed,
@@ -171,8 +173,8 @@ class StudioNotifier extends StateNotifier<StudioState> {
     });
   }
 
-  /// A3 FIX: rejectDraft session'ı korur, sadece taslak alanlarını temizler.
-  /// Screen bunu yakaladığında preparePreview'ı yeniden tetikler.
+  /// Draft reddedildi — session korunur, taslak alanlar temizlenir.
+  /// Screen bunu yakalar ve preparePreview'ı yeniden tetikler.
   void rejectDraft() {
     state = state.copyWith(
       phase: StudioPhase.idle,
@@ -189,7 +191,6 @@ class StudioNotifier extends StateNotifier<StudioState> {
   }
 }
 
-final studioProvider =
-    StateNotifierProvider<StudioNotifier, StudioState>(
+final studioProvider = StateNotifierProvider<StudioNotifier, StudioState>(
   (ref) => StudioNotifier(ref),
 );

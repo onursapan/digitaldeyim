@@ -137,15 +137,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<void> analyzeVoiceRecording(String audioPath) async {
     state = state.copyWith(isAnalyzingVoice: true);
 
-    // Faz 1: Simüle edilmiş analiz — audioPath okunmuyor.
-    // Faz 2: record paketi → gerçek ses dosyası → Gemini Audio API transkripsiyonu.
-    await Future.delayed(const Duration(seconds: 2));
+    // Gemini'ye gönderilecek transkript metni.
+    // Phase 2: Gerçek ses dosyası → Gemini Audio API ile transkripsiyon yapılacak.
+    // Phase 1: Onboarding verilerinden sentetik metin oluşturuluyor.
+    final syntheticText =
+        'Merhaba, ben ${state.businessName ?? "esnaf"}, '
+        '${state.selectedSectorId ?? "sektör"} alanında hizmet veriyorum. '
+        'En çok satan ürünlerim: ${state.topProducts.join(", ")}.';
 
     final geminiService = _ref.read(geminiServiceProvider);
     final analysis = await geminiService.analyzeBrandTone(
-      'Merhaba, ben ${state.businessName ?? "esnaf"}, '
-      'size ${state.topProducts.join(", ")} sunuyorum.',
-      state.selectedSectorId ?? '',
+      transcribedText: syntheticText,
+      sectorName: state.selectedSectorId ?? '',
     );
 
     state = state.copyWith(
