@@ -9,6 +9,7 @@ import '../../../domain/entities/shoot_session.dart';
 import '../providers/director_provider.dart';
 import '../../../presentation/onboarding/providers/onboarding_provider.dart';
 import '../widgets/ghost_overlay.dart';
+import '../../../core/extensions/l10n_extension.dart';
 
 class DirectorScreen extends ConsumerStatefulWidget {
   const DirectorScreen({super.key});
@@ -170,7 +171,7 @@ class _SimulatedCameraView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isRecording ? '● REC' : 'Kamera Hazır',
+              isRecording ? context.l10n.recordingIndicator : context.l10n.cameraReadyLabel,
               style: TextStyle(
                 color: isRecording
                     ? const Color(0xFFE53E3E)
@@ -200,13 +201,13 @@ class _LiveValidationBar extends StatelessWidget {
           _ValidationDot(
             icon: Icons.light_mode,
             ok: feedback.lightingOk,
-            label: 'Işık',
+            label: context.l10n.validationLightLabel,
           ),
           const SizedBox(height: 8),
           _ValidationDot(
             icon: Icons.motion_photos_on,
             ok: feedback.stabilityOk,
-            label: 'Sabit',
+            label: context.l10n.validationStabilityLabel,
           ),
         ],
       ),
@@ -320,7 +321,7 @@ class _DirectorPanel extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onGoToStudio,
               icon: const Icon(Icons.auto_awesome),
-              label: const Text('Stüdyoya Git'),
+              label: Text(context.l10n.goToStudioButton),
             )
           // A2 FIX: Mevcut klip validate edildiyse "Sonraki Klip" butonunu göster.
           else if (state.currentClipValidated && !state.isLastStep)
@@ -331,7 +332,7 @@ class _DirectorPanel extends StatelessWidget {
                 foregroundColor: Colors.white,
               ),
               icon: const Icon(Icons.check_circle_outline, size: 18),
-              label: const Text('Sonraki Klip'),
+              label: Text(context.l10n.nextClipButton),
             )
           else
             Column(
@@ -404,9 +405,9 @@ class _ErrorBanner extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetake,
-            child: const Text(
-              'Tekrar çek',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            child: Text(
+              context.l10n.retakeButton,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
             ),
           ),
         ],

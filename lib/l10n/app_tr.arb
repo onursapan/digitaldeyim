@@ -1,0 +1,244 @@
+{
+  "@@locale": "tr",
+
+  "appName": "digitaldeyim",
+  "@appName": { "description": "Uygulama adı" },
+
+  "loginSubtitle": "KOBİ'ler için AI destekli\nprofesyonel içerik üretimi",
+  "@loginSubtitle": { "description": "Giriş ekranı alt başlığı" },
+
+  "loginError": "Giriş yapılamadı. Lütfen tekrar deneyin.",
+  "@loginError": { "description": "Google Sign-In hata mesajı" },
+
+  "googleSignInButton": "Google ile devam et",
+  "@googleSignInButton": { "description": "Google giriş butonu" },
+
+  "loginTermsNotice": "Devam ederek Kullanım Koşullarını ve\nGizlilik Politikasını kabul etmiş olursunuz.",
+  "@loginTermsNotice": { "description": "Giriş ekranı hüküm metni" },
+
+  "sectorGreeting": "Merhaba!",
+  "@sectorGreeting": { "description": "Sektör seçim ekranı selamlama" },
+
+  "sectorTitle": "Ne satıyorsun?",
+  "@sectorTitle": { "description": "Sektör seçim başlığı" },
+
+  "sectorSubtitle": "Sektörüne özel AI yönetmen seni bekliyor.",
+  "@sectorSubtitle": { "description": "Sektör seçim alt başlığı" },
+
+  "sectorLoadError": "Sektörler yüklenemedi",
+  "@sectorLoadError": { "description": "Sektör yükleme hata başlığı" },
+
+  "sectorLoadErrorRetryHint": "Lütfen tekrar deneyin.",
+  "@sectorLoadErrorRetryHint": { "description": "Sektör yükleme hata ipucu" },
+
+  "sectorRetryButton": "Tekrar Dene",
+  "@sectorRetryButton": { "description": "Tekrar dene butonu" },
+
+  "sectorContinueButton": "Devam Et",
+  "@sectorContinueButton": { "description": "Devam et butonu" },
+
+  "businessInfoAppBarTitle": "İşletmeni Tanı",
+  "@businessInfoAppBarTitle": { "description": "İşletme bilgisi ekranı başlığı" },
+
+  "stepSector": "Sektör",
+  "@stepSector": { "description": "Adım göstergesi - sektör" },
+
+  "stepInfo": "Bilgiler",
+  "@stepInfo": { "description": "Adım göstergesi - bilgiler" },
+
+  "stepVoice": "Ses",
+  "@stepVoice": { "description": "Adım göstergesi - ses" },
+
+  "stepReady": "Hazır",
+  "@stepReady": { "description": "Adım göstergesi - hazır" },
+
+  "businessNameLabel": "İşletme Adın",
+  "@businessNameLabel": { "description": "İşletme adı form etiketi" },
+
+  "businessNameHint": "Örn: Ayşe Gelinlik Evi",
+  "@businessNameHint": { "description": "İşletme adı placeholder" },
+
+  "topProductsLabel": "En Çok Satan 3 Ürün",
+  "@topProductsLabel": { "description": "En çok satan ürünler etiketi" },
+
+  "productNameHint": "Ürün adı yaz",
+  "@productNameHint": { "description": "Ürün adı placeholder" },
+
+  "vibeLabel": "Dükkanın Karakteri",
+  "@vibeLabel": { "description": "Karakter seçim etiketi" },
+
+  "audienceLabel": "Müşterilerin Kimler?",
+  "@audienceLabel": { "description": "Hedef kitle etiketi" },
+
+  "businessInfoNextButton": "Sonraki Adım",
+  "@businessInfoNextButton": { "description": "Sonraki adım butonu" },
+
+  "vibeLuxury": "Lüks & Sofistike",
+  "@vibeLuxury": { "description": "BusinessVibe: luxury" },
+
+  "vibeFriendly": "Samimi & Sıcak",
+  "@vibeFriendly": { "description": "BusinessVibe: friendly" },
+
+  "vibeTech": "Teknolojik & Modern",
+  "@vibeTech": { "description": "BusinessVibe: tech" },
+
+  "vibeTraditional": "Geleneksel & Güvenilir",
+  "@vibeTraditional": { "description": "BusinessVibe: traditional" },
+
+  "audienceYouth": "Gençler (18-30)",
+  "@audienceYouth": { "description": "TargetAudience: youth" },
+
+  "audienceFamilies": "Aileler",
+  "@audienceFamilies": { "description": "TargetAudience: families" },
+
+  "audienceProfessionals": "Profesyoneller",
+  "@audienceProfessionals": { "description": "TargetAudience: professionals" },
+
+  "audienceMixed": "Karma",
+  "@audienceMixed": { "description": "TargetAudience: mixed" },
+
+  "voiceAppBarTitle": "Marka Sesini Kaydet",
+  "@voiceAppBarTitle": { "description": "Ses kaydı ekranı başlığı" },
+
+  "voicePromptTitle": "15 saniyede dükkanını anlat",
+  "@voicePromptTitle": { "description": "Ses kaydı prompt başlığı" },
+
+  "voicePromptBody": "AI, konuşma tonundan markanın karakterini ve enerjisini analiz edecek. Doğal konuş, performans yapma.",
+  "@voicePromptBody": { "description": "Ses kaydı açıklama metni" },
+
+  "voiceStatusRecording": "Kayıt yapılıyor...",
+  "@voiceStatusRecording": { "description": "Kayıt durumu etiketi" },
+
+  "voiceStatusDone": "Kayıt tamamlandı",
+  "@voiceStatusDone": { "description": "Kayıt tamamlandı etiketi" },
+
+  "voiceStatusIdle": "Mikrofona bas ve konuş",
+  "@voiceStatusIdle": { "description": "Kayıt bekleme etiketi" },
+
+  "voiceAnalyzingLabel": "AI markanı analiz ediyor...",
+  "@voiceAnalyzingLabel": { "description": "Analiz yükleme etiketi" },
+
+  "voiceAnalyzeButton": "Analiz Et ve Başla",
+  "@voiceAnalyzeButton": { "description": "Analiz et butonu" },
+
+  "voiceSkipButton": "Şimdilik atla",
+  "@voiceSkipButton": { "description": "Atla butonu" },
+
+  "voiceMicError": "Mikrofon başlatılamadı: {error}",
+  "@voiceMicError": {
+    "description": "Mikrofon hata mesajı",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "voiceDefaultBusinessName": "İşletmem",
+  "@voiceDefaultBusinessName": { "description": "Varsayılan işletme adı" },
+
+  "cameraReadyLabel": "Kamera Hazır",
+  "@cameraReadyLabel": { "description": "Kamera hazır etiketi" },
+
+  "recordingIndicator": "● REC",
+  "@recordingIndicator": { "description": "Kayıt göstergesi" },
+
+  "validationLightLabel": "Işık",
+  "@validationLightLabel": { "description": "Işık validasyon etiketi" },
+
+  "validationStabilityLabel": "Sabit",
+  "@validationStabilityLabel": { "description": "Stabilite validasyon etiketi" },
+
+  "goToStudioButton": "Stüdyoya Git",
+  "@goToStudioButton": { "description": "Stüdyo yönlendirme butonu" },
+
+  "nextClipButton": "Sonraki Klip",
+  "@nextClipButton": { "description": "Sonraki klip butonu" },
+
+  "retakeButton": "Tekrar çek",
+  "@retakeButton": { "description": "Tekrar çekim butonu" },
+
+  "cameraNotInitialized": "Kamera başlatılamadı: {error}",
+  "@cameraNotInitialized": {
+    "description": "Kamera başlatma hatası",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "studioAppBarTitle": "Taslak Stüdyo",
+  "@studioAppBarTitle": { "description": "Stüdyo ekranı başlığı" },
+
+  "studioRejectButton": "Reddet",
+  "@studioRejectButton": { "description": "Draft reddet butonu" },
+
+  "loadingBuildingPrompt": "İçerik kurgusu hazırlanıyor...",
+  "@loadingBuildingPrompt": { "description": "Prompt hazırlama yükleme" },
+
+  "loadingGeneratingCaption": "AI açıklama yazıyor...",
+  "@loadingGeneratingCaption": { "description": "Caption üretme yükleme" },
+
+  "loadingGeneric": "Yükleniyor...",
+  "@loadingGeneric": { "description": "Genel yükleme etiketi" },
+
+  "draftPreviewLabel": "Taslak Önizleme",
+  "@draftPreviewLabel": { "description": "Taslak önizleme başlığı" },
+
+  "aiCaptionSectionTitle": "AI Açıklama",
+  "@aiCaptionSectionTitle": { "description": "AI caption bölüm başlığı" },
+
+  "regenerateCaptionButton": "Yeniden Yaz",
+  "@regenerateCaptionButton": { "description": "Caption yenile butonu" },
+
+  "upscaleButton": "4K'ya Yükselt",
+  "@upscaleButton": { "description": "4K render butonu" },
+
+  "creditsWillBeUsed": "{count} kredi kullanılacak",
+  "@creditsWillBeUsed": {
+    "description": "Kredi kullanım bilgisi",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "insufficientCreditsSnackbar": "Yetersiz kredi. Lütfen kredi satın alın.",
+  "@insufficientCreditsSnackbar": { "description": "Yetersiz kredi uyarısı" },
+
+  "renderingTitle": "4K render yapılıyor...",
+  "@renderingTitle": { "description": "Render başlığı" },
+
+  "renderingSubtitle": "İçerik hazır olunca bildirim alacaksın.",
+  "@renderingSubtitle": { "description": "Render alt başlığı" },
+
+  "contentReadyTitle": "İçerik Hazır!",
+  "@contentReadyTitle": { "description": "İçerik hazır başlığı" },
+
+  "shareInstagramButton": "Instagram'a Paylaş",
+  "@shareInstagramButton": { "description": "Instagram paylaş butonu" },
+
+  "saveToGalleryButton": "Galeriye Kaydet",
+  "@saveToGalleryButton": { "description": "Galeriye kaydet butonu" },
+
+  "unknownError": "Bilinmeyen hata.",
+  "@unknownError": { "description": "Genel hata mesajı" },
+
+  "studioRetryButton": "Tekrar Dene",
+  "@studioRetryButton": { "description": "Stüdyo tekrar dene butonu" },
+
+  "creditDialogTitle": "Render Onayı",
+  "@creditDialogTitle": { "description": "Kredi onay diyalog başlığı" },
+
+  "creditDialogBody": "Bu içeriği 4K ve AI efektleriyle oluşturmak için {credits} kredin kullanılacak. Kalan kredin: {remaining} → {afterDeduct}. Devam etmek istiyor musun?",
+  "@creditDialogBody": {
+    "description": "Kredi onay diyalog metni",
+    "placeholders": {
+      "credits": { "type": "int" },
+      "remaining": { "type": "int" },
+      "afterDeduct": { "type": "int" }
+    }
+  },
+
+  "creditDialogCancel": "İptal",
+  "@creditDialogCancel": { "description": "Diyalog iptal butonu" },
+
+  "creditDialogConfirm": "Onayla",
+  "@creditDialogConfirm": { "description": "Diyalog onayla butonu" }
+}
