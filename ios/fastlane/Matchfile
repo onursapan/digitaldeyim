@@ -1,0 +1,8 @@
+# Matchfile — Fastlane Match konfigürasyonu
+# Sertifikalar şifreli olarak private bir Git repo'sunda tutulur.
+# CI'da MATCH_GIT_URL ve MATCH_PASSWORD ortam değişkenleri gereklidir.
+
+git_url(ENV["MATCH_GIT_URL"])          # GitHub secret: MATCH_GIT_URL
+type("appstore")                        # TestFlight için App Store distribution
+app_identifier(["com.digitaldeyim.app"])
+username(ENV["FASTLANE_USER"])          # Apple ID (GitHub secret: FASTLANE_USER)

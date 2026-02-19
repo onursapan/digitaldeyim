@@ -1,0 +1,96 @@
+name: Deploy to TestFlight
+
+# main'e push veya v* tag'i atılınca tetiklenir.
+# feature/* ve dev branch'leri yalnızca analyze + test çalıştırır (build yapmaz).
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  # ── Tüm push/PR'lerde: analiz ve lint ──────────────────────────────────────
+  analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --no-pub
+
+  # ── Sadece main branch / v* tag'de: iOS build + TestFlight ─────────────────
+  deploy_ios:
+    name: iOS TestFlight Deploy
+    runs-on: macos-15
+    needs: analyze
+    # Yalnızca main'e doğrudan push veya v* tag'inde çalışır (PR'de değil)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+
+      # Match için SSH key (certificates private repo'ya erişim)
+      - name: Setup SSH key for Match
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.MATCH_GIT_PRIVATE_KEY }}
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Decode App Store Connect API key
+        run: |
+          echo "${{ secrets.ASC_PRIVATE_KEY_BASE64 }}" | base64 --decode > ios/AuthKey.p8
+
+      - name: Build version string
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          BUILD_NUMBER=${{ github.run_number }}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Fastlane beta
+        working-directory: ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_PATH: ./AuthKey.p8
+          FLUTTER_BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+          FLUTTER_VERSION: ${{ steps.version.outputs.version }}
+        run: bundle exec fastlane beta
+
+      - name: Cleanup API key
+        if: always()
+        run: rm -f ios/AuthKey.p8
