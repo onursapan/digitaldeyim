@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,25 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
+
+  Future<void> _handleDevSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final user = await ref.read(authServiceProvider).signInAnonymously();
+      if (user != null && mounted) {
+        context.go(AppRoutes.sectorSelection);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Dev girişi başarısız: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _handleGoogleSignIn() async {
     setState(() {
@@ -148,6 +168,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                 ),
               ),
+
+              // Dev mode bypass — only visible in debug builds
+              if (kDebugMode) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _isLoading ? null : _handleDevSignIn,
+                  child: const Text(
+                    'Dev Girişi (Anonim)',
+                    style: TextStyle(
+                      color: Color(0xFF555555),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 16),
               Text(
