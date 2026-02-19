@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
 import '../../../core/agents/validator_agent.dart';
+import '../../../core/services/tts_service.dart';
 import '../../../domain/entities/sector.dart';
 import '../../../domain/entities/shoot_session.dart';
 import '../providers/director_provider.dart';
 import '../../../presentation/onboarding/providers/onboarding_provider.dart';
+import '../widgets/ghost_overlay.dart';
 
 class DirectorScreen extends ConsumerStatefulWidget {
   const DirectorScreen({super.key});
@@ -16,10 +18,27 @@ class DirectorScreen extends ConsumerStatefulWidget {
 }
 
 class _DirectorScreenState extends ConsumerState<DirectorScreen> {
+  int? _lastSpokenStepIndex;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initSession());
+  }
+
+  @override
+  void dispose() {
+    // TTS'i durdur — kullanıcı ekrandan çıkınca ses kesilsin.
+    ref.read(ttsServiceProvider).stop();
+    super.dispose();
+  }
+
+  void _speakStepIfNew(DirectorState state) {
+    final step = state.currentStep;
+    if (step == null) return;
+    if (state.currentStepIndex == _lastSpokenStepIndex) return;
+    _lastSpokenStepIndex = state.currentStepIndex;
+    ref.read(ttsServiceProvider).speak(step.instruction);
   }
 
   void _initSession() {
@@ -52,6 +71,11 @@ class _DirectorScreenState extends ConsumerState<DirectorScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(directorProvider);
 
+    // Adım değişince TTS ile talimatı sesli oku.
+    ref.listen<DirectorState>(directorProvider, (prev, next) {
+      _speakStepIfNew(next);
+    });
+
     if (state.session == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -66,12 +90,17 @@ class _DirectorScreenState extends ConsumerState<DirectorScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Simüle kamera preview — Gerçekte CameraPreview widget
+          // Simüle kamera preview — Phase 2: CameraPreview widget
           _SimulatedCameraView(isRecording: state.isRecording),
 
-          // Ghost Overlay — çekim rehberi
+          // GhostOverlay — tam ekran, hareket rehberi + grid + talimat çubuğu
           if (step != null)
-            _GhostOverlay(step: step, sector: session.sector),
+            Positioned.fill(
+              child: GhostOverlay(
+                step: step,
+                isRecording: state.isRecording,
+              ),
+            ),
 
           // Live validation feedback
           if (state.liveFeedback != null)
@@ -156,63 +185,6 @@ class _SimulatedCameraView extends StatelessWidget {
   }
 }
 
-class _GhostOverlay extends StatelessWidget {
-  final ShootStep step;
-  final Sector sector;
-
-  const _GhostOverlay({required this.step, required this.sector});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 0,
-      right: 0,
-      child: Column(
-        children: [
-          // Adım başlığı
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              step.title,
-              style: const TextStyle(
-                color: Color(0xFFC9A96E),
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Overlay ipucu
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Color(0xFFC9A96E).withValues(alpha: 0.5),
-              ),
-            ),
-            child: Text(
-              step.overlayHint,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _LiveValidationBar extends StatelessWidget {
   final LiveValidationFeedback feedback;
