@@ -50,6 +50,20 @@ class AuthService {
     }
   }
 
+  Future<User?> signInAnonymously() async {
+    try {
+      final userCredential = await _auth.signInAnonymously();
+      _log.i('Anonymous sign-in successful: ${userCredential.user?.uid}');
+      return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      _log.e('FirebaseAuthException during anonymous sign-in: ${e.code}');
+      rethrow;
+    } catch (e) {
+      _log.e('Unexpected error during anonymous sign-in: $e');
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     try {
       await Future.wait([
