@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/user_profile_provider.dart';
 import '../providers/studio_provider.dart';
 import '../../director/providers/director_provider.dart';
+import '../../../core/extensions/l10n_extension.dart';
 
 class StudioScreen extends ConsumerStatefulWidget {
   const StudioScreen({super.key});
@@ -36,7 +37,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Taslak Stüdyo'),
+        title: Text(context.l10n.studioAppBarTitle),
         actions: [
           if (state.phase == StudioPhase.awaitingApproval)
             TextButton(
@@ -54,9 +55,9 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                   }
                 });
               },
-              child: const Text(
-                'Reddet',
-                style: TextStyle(color: Color(0xFFE53E3E)),
+              child: Text(
+                context.l10n.studioRejectButton,
+                style: const TextStyle(color: Color(0xFFE53E3E)),
               ),
             ),
         ],
@@ -82,7 +83,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
       StudioPhase.rendering => _RenderingView(),
       StudioPhase.completed => _CompletedView(state: state),
       StudioPhase.failed => _FailedView(
-          message: state.errorMessage ?? 'Bilinmeyen hata.',
+          message: state.errorMessage ?? context.l10n.unknownError,
           onRetry: _startPreview,
         ),
     };
@@ -96,9 +97,9 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     // B1: Kredit yeterliliği kontrolü
     if (!ref.read(userProfileProvider.notifier).hasEnoughCredits) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Yetersiz kredi. Lütfen kredi satın alın.'),
-          backgroundColor: Color(0xFFE53E3E),
+        SnackBar(
+          content: Text(context.l10n.insufficientCreditsSnackbar),
+          backgroundColor: const Color(0xFFE53E3E),
         ),
       );
       return;
@@ -132,10 +133,10 @@ class _LoadingView extends StatelessWidget {
   final StudioPhase phase;
   const _LoadingView({required this.phase});
 
-  String get _message => switch (phase) {
-        StudioPhase.buildingPrompt => 'İçerik kurgusu hazırlanıyor...',
-        StudioPhase.generatingCaption => 'AI açıklama yazıyor...',
-        _ => 'Yükleniyor...',
+  String _getMessage(BuildContext context) => switch (phase) {
+        StudioPhase.buildingPrompt => context.l10n.loadingBuildingPrompt,
+        StudioPhase.generatingCaption => context.l10n.loadingGeneratingCaption,
+        _ => context.l10n.loadingGeneric,
       };
 
   @override
@@ -147,7 +148,7 @@ class _LoadingView extends StatelessWidget {
           const CircularProgressIndicator(color: Color(0xFFC9A96E)),
           const SizedBox(height: 20),
           Text(
-            _message,
+            _getMessage(context),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -171,6 +172,7 @@ class _DraftView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -186,16 +188,16 @@ class _DraftView extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF2A2A2A)),
             ),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_circle_outline,
+                  const Icon(Icons.play_circle_outline,
                       size: 56, color: Color(0xFFC9A96E)),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Taslak Önizleme',
-                    style: TextStyle(color: Colors.white54),
+                    l10n.draftPreviewLabel,
+                    style: const TextStyle(color: Colors.white54),
                   ),
                 ],
               ),
@@ -205,7 +207,7 @@ class _DraftView extends StatelessWidget {
 
           // Oluşturulan açıklama
           if (state.generatedCaption != null) ...[
-            Text('AI Açıklama', style: theme.textTheme.titleLarge),
+            Text(l10n.aiCaptionSectionTitle, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -230,7 +232,7 @@ class _DraftView extends StatelessWidget {
                   ? null // yükleme sırasında devre dışı
                   : onRegenerate,
               icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Yeniden Yaz'),
+              label: Text(l10n.regenerateCaptionButton),
             ),
           ],
           const SizedBox(height: 32),
@@ -240,7 +242,7 @@ class _DraftView extends StatelessWidget {
                 ? onApprove
                 : null,
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('4K\'ya Yükselt'),
+            label: Text(l10n.upscaleButton),
           ),
           const SizedBox(height: 12),
           Container(
@@ -254,7 +256,7 @@ class _DraftView extends StatelessWidget {
                 const Icon(Icons.toll, color: Color(0xFFC9A96E), size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  '${state.creditsRequired} kredi kullanılacak',
+                  l10n.creditsWillBeUsed(state.creditsRequired),
                   style: const TextStyle(color: Colors.white54, fontSize: 13),
                 ),
               ],
@@ -276,12 +278,12 @@ class _RenderingView extends StatelessWidget {
           const CircularProgressIndicator(color: Color(0xFFC9A96E)),
           const SizedBox(height: 20),
           Text(
-            '4K render yapılıyor...',
+            context.l10n.renderingTitle,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           Text(
-            'İçerik hazır olunca bildirim alacaksın.',
+            context.l10n.renderingSubtitle,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -305,7 +307,7 @@ class _CompletedView extends StatelessWidget {
             const Icon(Icons.check_circle, color: Color(0xFF38A169), size: 72),
             const SizedBox(height: 20),
             Text(
-              'İçerik Hazır! 🎉',
+              '${context.l10n.contentReadyTitle} 🎉',
               style: Theme.of(context).textTheme.displayLarge,
             ),
             const SizedBox(height: 32),
@@ -316,7 +318,7 @@ class _CompletedView extends StatelessWidget {
                 // Share.shareXFiles([XFile(localPath)], text: caption);
               },
               icon: const Icon(Icons.share),
-              label: const Text('Instagram\'a Paylaş'),
+              label: Text(context.l10n.shareInstagramButton),
             ),
             const SizedBox(height: 12),
             // B3: TODO Phase 2 — image_picker / gallery_saver ile kaydet
@@ -328,7 +330,7 @@ class _CompletedView extends StatelessWidget {
                 minimumSize: const Size(double.infinity, 52),
                 side: const BorderSide(color: Color(0xFF2A2A2A)),
               ),
-              child: const Text('Galeriye Kaydet'),
+              child: Text(context.l10n.saveToGalleryButton),
             ),
           ],
         ),
@@ -357,7 +359,7 @@ class _FailedView extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: onRetry,
-              child: const Text('Tekrar Dene'),
+              child: Text(context.l10n.studioRetryButton),
             ),
           ],
         ),
@@ -379,24 +381,27 @@ class _CreditConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Render Onayı'),
+      title: Text(l10n.creditDialogTitle),
       content: Text(
-        'Bu içeriği 4K ve AI efektleriyle oluşturmak için $credits kredin kullanılacak. '
-        'Kalan kredin: $remainingCredits → ${remainingCredits - credits}. '
-        'Devam etmek istiyor musun?',
+        l10n.creditDialogBody(
+          credits,
+          remainingCredits,
+          remainingCredits - credits,
+        ),
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal', style: TextStyle(color: Colors.white38)),
+          child: Text(l10n.creditDialogCancel, style: const TextStyle(color: Colors.white38)),
         ),
         ElevatedButton(
           onPressed: onConfirm,
-          child: const Text('Onayla'),
+          child: Text(l10n.creditDialogConfirm),
         ),
       ],
     );

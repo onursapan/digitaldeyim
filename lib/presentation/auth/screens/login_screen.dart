@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../config/app_router.dart';
+import '../../../core/extensions/l10n_extension.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -30,7 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Giriş yapılamadı. Lütfen tekrar deneyin.';
+          _errorMessage = context.l10n.loginError;
         });
       }
     } finally {
@@ -42,6 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
@@ -53,10 +55,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const Spacer(flex: 2),
               // Logo / title
-              const Text(
-                'digitaldeyim',
+              Text(
+                l10n.appName,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 36,
                   fontWeight: FontWeight.w700,
@@ -64,10 +66,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'KOBİ\'ler için AI destekli\nprofesyonel içerik üretimi',
+              Text(
+                l10n.loginSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF888888),
                   fontSize: 16,
                   height: 1.5,
@@ -135,9 +137,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'Google ile devam et',
-                              style: TextStyle(
+                            Text(
+                              l10n.googleSignInButton,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -148,10 +150,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
 
               const SizedBox(height: 16),
-              const Text(
-                'Devam ederek Kullanım Koşullarını ve\nGizlilik Politikasını kabul etmiş olursunuz.',
+              Text(
+                l10n.loginTermsNotice,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF555555),
                   fontSize: 12,
                   height: 1.6,

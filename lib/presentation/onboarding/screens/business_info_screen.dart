@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
 import '../../../domain/entities/user_profile.dart';
 import '../providers/onboarding_provider.dart';
+import '../../../core/extensions/l10n_extension.dart';
 
 class BusinessInfoScreen extends ConsumerStatefulWidget {
   const BusinessInfoScreen({super.key});
@@ -45,10 +46,11 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
     final state = ref.watch(onboardingProvider);
     final notifier = ref.read(onboardingProvider.notifier);
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('İşletmeni Tanı'),
+        title: Text(l10n.businessInfoAppBarTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => context.pop(),
@@ -60,19 +62,19 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _StepIndicator(
-              labels: const ['Sektör', 'Bilgiler', 'Ses', 'Hazır'],
+              labels: [l10n.stepSector, l10n.stepInfo, l10n.stepVoice, l10n.stepReady],
               currentIndex: 1,
             ),
             const SizedBox(height: 32),
 
             // İşletme adı
-            Text('İşletme Adın', style: theme.textTheme.titleLarge),
+            Text(l10n.businessNameLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             TextField(
               controller: _nameController,
               onChanged: notifier.setBusinessName,
-              decoration: const InputDecoration(
-                hintText: 'Örn: Ayşe Gelinlik Evi',
+              decoration: InputDecoration(
+                hintText: l10n.businessNameHint,
               ),
             ),
             const SizedBox(height: 28),
@@ -81,7 +83,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('En Çok Satan 3 Ürün', style: theme.textTheme.titleLarge),
+                Text(l10n.topProductsLabel, style: theme.textTheme.titleLarge),
                 Text(
                   '${state.topProducts.length}/3',
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -96,8 +98,8 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                 Expanded(
                   child: TextField(
                     controller: _productController,
-                    decoration: const InputDecoration(
-                      hintText: 'Ürün adı yaz',
+                    decoration: InputDecoration(
+                      hintText: l10n.productNameHint,
                     ),
                   ),
                 ),
@@ -134,7 +136,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
             const SizedBox(height: 28),
 
             // Mağaza karakteri
-            Text('Dükkanın Karakteri', style: theme.textTheme.titleLarge),
+            Text(l10n.vibeLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             ...BusinessVibe.values.map((vibe) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -147,7 +149,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
             const SizedBox(height: 28),
 
             // Hedef kitle
-            Text('Müşterilerin Kimler?', style: theme.textTheme.titleLarge),
+            Text(l10n.audienceLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             ...TargetAudience.values.map((audience) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -166,7 +168,7 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
                       state.topProducts.isNotEmpty
                   ? () => context.push(AppRoutes.voiceRecording)
                   : null,
-              child: const Text('Sonraki Adım'),
+              child: Text(l10n.businessInfoNextButton),
             ),
             const SizedBox(height: 24),
           ],

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
 import '../../../domain/entities/sector.dart';
 import '../providers/onboarding_provider.dart';
+import '../../../core/extensions/l10n_extension.dart';
 
 class SectorSelectionScreen extends ConsumerWidget {
   const SectorSelectionScreen({super.key});
@@ -12,6 +13,7 @@ class SectorSelectionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       body: SafeArea(
@@ -22,19 +24,19 @@ class SectorSelectionScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: 40),
               Text(
-                'Merhaba! 👋',
+                '${l10n.sectorGreeting} 👋',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFFC9A96E),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Ne satıyorsun?',
+                l10n.sectorTitle,
                 style: theme.textTheme.displayLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'Sektörüne özel AI yönetmen seni bekliyor.',
+                l10n.sectorSubtitle,
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 40),
@@ -56,13 +58,13 @@ class SectorSelectionScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Sektörler yüklenemedi',
+                          l10n.sectorLoadError,
                           style: theme.textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Lütfen tekrar deneyin.',
-                          style: TextStyle(color: Colors.white38),
+                        Text(
+                          l10n.sectorLoadErrorRetryHint,
+                          style: const TextStyle(color: Colors.white38),
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
@@ -70,7 +72,7 @@ class SectorSelectionScreen extends ConsumerWidget {
                               .read(onboardingProvider.notifier)
                               .retryLoadSectors(),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Tekrar Dene'),
+                          label: Text(l10n.sectorRetryButton),
                         ),
                       ],
                     ),
@@ -100,7 +102,7 @@ class SectorSelectionScreen extends ConsumerWidget {
                 onPressed: state.selectedSectorId != null
                     ? () => context.push(AppRoutes.businessInfo)
                     : null,
-                child: const Text('Devam Et'),
+                child: Text(l10n.sectorContinueButton),
               ),
             ],
           ),
