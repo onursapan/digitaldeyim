@@ -111,13 +111,9 @@ class _DirectorScreenState extends ConsumerState<DirectorScreen> {
   Future<void> _handleRecord(DirectorState state) async {
     final notifier = ref.read(directorProvider.notifier);
     if (state.isRecording) {
-      // Çekimi durdur ve validate et
-      // Faz 2: Gerçek CameraController.stopVideoRecording() buraya gelir
-      const simulatedPath = 'local://simulated_clip.mp4';
-      await notifier.stopRecordingAndValidate(simulatedPath);
+      await notifier.stopRecordingAndValidate();
     } else {
-      notifier.startRecording();
-      // Faz 2: CameraController.startVideoRecording() buraya gelir
+      await notifier.startRecording();
     }
   }
 }

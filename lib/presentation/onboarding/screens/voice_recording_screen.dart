@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
 import '../../../core/providers/user_profile_provider.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/microphone_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../domain/entities/user_profile.dart';
 import '../providers/onboarding_provider.dart';
+import 'dart:io';
 
 class VoiceRecordingScreen extends ConsumerStatefulWidget {
   const VoiceRecordingScreen({super.key});
@@ -19,6 +22,7 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
     with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   bool _hasRecording = false;
+  String? _recordedPath;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -40,8 +44,44 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
     super.dispose();
   }
 
-  /// UserProfile'ı Onboarding state'inden oluşturur ve Firestore'a kaydeder.
-  /// Firebase Auth UID + email kullanır.
+  Future<void> _toggleRecording() async {
+    final mic = ref.read(microphoneServiceProvider);
+
+    if (!_isRecording) {
+      try {
+        await mic.startRecording();
+        setState(() {
+          _isRecording = true;
+          _hasRecording = false;
+          _recordedPath = null;
+        });
+        _pulseController.repeat(reverse: true);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Mikrofon başlatılamadı: $e')),
+          );
+        }
+      }
+    } else {
+      try {
+        final path = await mic.stopRecording();
+        _pulseController.stop();
+        _pulseController.reset();
+        setState(() {
+          _isRecording = false;
+          _hasRecording = path != null;
+          _recordedPath = path;
+        });
+      } catch (e) {
+        _pulseController.stop();
+        _pulseController.reset();
+        setState(() => _isRecording = false);
+      }
+    }
+  }
+
+  /// UserProfile oluşturur, ses dosyasını Storage'a yükler, Firestore'a kaydeder.
   Future<void> _initUserProfile() async {
     final ob = ref.read(onboardingProvider);
     if (ob.availableSectors.isEmpty) return;
@@ -55,6 +95,20 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
     final uid = currentUser?.uid ?? 'user_001';
     final email = currentUser?.email ?? '';
 
+    // Ses kaydı varsa Storage'a yükle
+    String? voiceUrl;
+    if (_recordedPath != null) {
+      try {
+        voiceUrl = await ref.read(storageServiceProvider).uploadVoiceRecording(
+              uid: uid,
+              file: File(_recordedPath!),
+            );
+      } catch (e) {
+        // Upload başarısız olsa bile devam et
+        voiceUrl = null;
+      }
+    }
+
     await ref.read(userProfileProvider.notifier).initialize(
           uid: uid,
           email: email,
@@ -63,21 +117,8 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
           topProducts: ob.topProducts,
           vibe: ob.vibe ?? BusinessVibe.friendly,
           audience: ob.audience ?? TargetAudience.mixed,
-          brandToneAnalysis: ob.brandToneAnalysis,
+          brandToneAnalysis: ob.brandToneAnalysis ?? voiceUrl,
         );
-  }
-
-  void _toggleRecording() {
-    setState(() {
-      _isRecording = !_isRecording;
-      if (_isRecording) {
-        _pulseController.repeat(reverse: true);
-      } else {
-        _pulseController.stop();
-        _pulseController.reset();
-        _hasRecording = true;
-      }
-    });
   }
 
   @override
@@ -161,7 +202,7 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
               _isRecording
                   ? 'Kayıt yapılıyor...'
                   : _hasRecording
-                      ? 'Kayıt tamamlandı ✓'
+                      ? 'Kayıt tamamlandı'
                       : 'Mikrofona bas ve konuş',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: _isRecording
@@ -193,7 +234,8 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
                         ? () async {
                             await ref
                                 .read(onboardingProvider.notifier)
-                                .analyzeVoiceRecording('simulated_audio.m4a');
+                                .analyzeVoiceRecording(
+                                    _recordedPath ?? 'audio.m4a');
                             if (context.mounted) {
                               await _initUserProfile();
                               if (context.mounted) {
