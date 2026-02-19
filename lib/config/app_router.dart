@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../presentation/auth/screens/login_screen.dart';
 import '../presentation/onboarding/screens/sector_selection_screen.dart';
 import '../presentation/onboarding/screens/business_info_screen.dart';
 import '../presentation/onboarding/screens/voice_recording_screen.dart';
 import '../presentation/director/screens/director_screen.dart';
 import '../presentation/studio/screens/studio_screen.dart';
 import '../presentation/onboarding/providers/onboarding_provider.dart';
+import '../core/services/auth_service.dart';
 
 class AppRoutes {
+  static const login = '/login';
   static const sectorSelection = '/';
   static const businessInfo = '/business-info';
   static const voiceRecording = '/voice-recording';
@@ -16,24 +19,46 @@ class AppRoutes {
   static const studio = '/studio';
 }
 
-/// B5: GoRouter'ı onboarding state değişimlerine karşı reaktif kılan notifier.
-/// Riverpod ref'ini dinleyerek route redirect kararlarını verir.
+/// GoRouter'ı auth + onboarding state değişimlerine karşı reaktif kılan notifier.
 class _RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   _RouterNotifier(this._ref) {
-    // Onboarding state değiştiğinde GoRouter'ı yenile → redirect yeniden tetiklenir.
-    _ref.listen(onboardingProvider, (context, state) => notifyListeners());
+    _ref.listen(authStateProvider, (prev, next) => notifyListeners());
+    _ref.listen(onboardingProvider, (prev, next) => notifyListeners());
   }
 
   String? redirect(BuildContext context, GoRouterState state) {
+    final authAsync = _ref.read(authStateProvider);
     final onboarding = _ref.read(onboardingProvider);
-    const protected = {AppRoutes.director, AppRoutes.studio};
 
-    if (protected.contains(state.matchedLocation) &&
+    final isLoggedIn = authAsync.valueOrNull != null;
+    final isOnLogin = state.matchedLocation == AppRoutes.login;
+    const onboardingRoutes = {
+      AppRoutes.sectorSelection,
+      AppRoutes.businessInfo,
+      AppRoutes.voiceRecording,
+    };
+    const protectedRoutes = {AppRoutes.director, AppRoutes.studio};
+
+    // Not logged in → force to login (except already on login)
+    if (!isLoggedIn && !isOnLogin) return AppRoutes.login;
+
+    // Logged in but on login page → go to onboarding start
+    if (isLoggedIn && isOnLogin) return AppRoutes.sectorSelection;
+
+    // Logged in, onboarding not complete → block director/studio
+    if (isLoggedIn &&
+        protectedRoutes.contains(state.matchedLocation) &&
         !onboarding.canProceedToDirector) {
-      // Onboarding tamamlanmadan /director veya /studio'ya erişim engellenir.
       return AppRoutes.sectorSelection;
+    }
+
+    // Logged in, onboarding complete → skip onboarding screens if trying to revisit
+    if (isLoggedIn &&
+        onboarding.canProceedToDirector &&
+        onboardingRoutes.contains(state.matchedLocation)) {
+      return null; // allow — user may want to change settings
     }
 
     return null;
@@ -47,10 +72,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(notifier.dispose);
 
   return GoRouter(
-    initialLocation: AppRoutes.sectorSelection,
+    initialLocation: AppRoutes.login,
     refreshListenable: notifier,
     redirect: notifier.redirect,
     routes: [
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
       GoRoute(
         path: AppRoutes.sectorSelection,
         builder: (context, state) => const SectorSelectionScreen(),
