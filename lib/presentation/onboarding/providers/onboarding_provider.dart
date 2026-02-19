@@ -8,6 +8,8 @@ class OnboardingState {
   final String? selectedSectorId;
   final List<Sector> availableSectors;
   final bool isLoadingSectors;
+  // B4: Sektör yüklenemediğinde hata göstermek için flag.
+  final bool hasSectorLoadError;
   final String? businessName;
   final List<String> topProducts;
   final BusinessVibe? vibe;
@@ -20,6 +22,7 @@ class OnboardingState {
     this.selectedSectorId,
     this.availableSectors = const [],
     this.isLoadingSectors = false,
+    this.hasSectorLoadError = false,
     this.businessName,
     this.topProducts = const [],
     this.vibe,
@@ -41,6 +44,7 @@ class OnboardingState {
     String? selectedSectorId,
     List<Sector>? availableSectors,
     bool? isLoadingSectors,
+    bool? hasSectorLoadError,
     String? businessName,
     List<String>? topProducts,
     BusinessVibe? vibe,
@@ -53,6 +57,7 @@ class OnboardingState {
       selectedSectorId: selectedSectorId ?? this.selectedSectorId,
       availableSectors: availableSectors ?? this.availableSectors,
       isLoadingSectors: isLoadingSectors ?? this.isLoadingSectors,
+      hasSectorLoadError: hasSectorLoadError ?? this.hasSectorLoadError,
       businessName: businessName ?? this.businessName,
       topProducts: topProducts ?? this.topProducts,
       vibe: vibe ?? this.vibe,
@@ -71,14 +76,33 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   }
 
   Future<void> _loadSectors() async {
-    state = state.copyWith(isLoadingSectors: true);
-    final sectors =
-        await _ref.read(sectorDatasourceProvider).loadAllSectors();
-    state = state.copyWith(
-      availableSectors: sectors,
-      isLoadingSectors: false,
-    );
+    state = state.copyWith(isLoadingSectors: true, hasSectorLoadError: false);
+    try {
+      final sectors =
+          await _ref.read(sectorDatasourceProvider).loadAllSectors();
+      if (sectors.isEmpty) {
+        // JSON parse başarılı ama boş liste: hata olarak işle.
+        state = state.copyWith(
+          isLoadingSectors: false,
+          hasSectorLoadError: true,
+        );
+      } else {
+        state = state.copyWith(
+          availableSectors: sectors,
+          isLoadingSectors: false,
+        );
+      }
+    } catch (_) {
+      // B4: Asset yükleme veya parse hatası → retry butonu göster.
+      state = state.copyWith(
+        isLoadingSectors: false,
+        hasSectorLoadError: true,
+      );
+    }
   }
+
+  /// B4: Retry butonu için public metod.
+  Future<void> retryLoadSectors() => _loadSectors();
 
   void selectSector(String sectorId) {
     state = state.copyWith(selectedSectorId: sectorId, currentStep: 1);
@@ -113,8 +137,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<void> analyzeVoiceRecording(String audioPath) async {
     state = state.copyWith(isAnalyzingVoice: true);
 
-    // Faz 1: Simüle edilmiş analiz
-    // Faz 2: Gerçek ses transkripsiyon + Gemini analizi
+    // Faz 1: Simüle edilmiş analiz — audioPath okunmuyor.
+    // Faz 2: record paketi → gerçek ses dosyası → Gemini Audio API transkripsiyonu.
     await Future.delayed(const Duration(seconds: 2));
 
     final geminiService = _ref.read(geminiServiceProvider);

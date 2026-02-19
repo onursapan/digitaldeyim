@@ -25,16 +25,17 @@ void main() async {
   );
 }
 
-class DigitaldeyimApp extends StatelessWidget {
+// B5: ConsumerWidget → appRouterProvider'a erişim için Riverpod ref gerekiyor.
+class DigitaldeyimApp extends ConsumerWidget {
   const DigitaldeyimApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Digitaldeyim',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

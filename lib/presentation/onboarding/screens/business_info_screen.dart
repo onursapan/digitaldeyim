@@ -17,6 +17,23 @@ class _BusinessInfoScreenState extends ConsumerState<BusinessInfoScreen> {
   final _productController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // A6 FIX: Back-navigation'da TextField'ı provider state'iyle senkronize et.
+    // Controller write-only bağlantısı (onChanged) state'i günceller ama
+    // geri gelindiğinde controller'ı seed etmez; postFrameCallback ile düzeltiyoruz.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final saved = ref.read(onboardingProvider).businessName;
+      if (saved != null && saved.isNotEmpty && _nameController.text != saved) {
+        _nameController.text = saved;
+        _nameController.selection = TextSelection.fromPosition(
+          TextPosition(offset: saved.length),
+        );
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _productController.dispose();

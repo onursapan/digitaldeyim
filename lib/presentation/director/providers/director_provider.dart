@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/agents/validator_agent.dart';
 import '../../../core/providers/core_providers.dart';
@@ -34,8 +35,17 @@ class DirectorState {
     return currentStepIndex == steps.length - 1;
   }
 
-  bool get allClipsValidated =>
-      session?.isReadyForDraft ?? false;
+  bool get allClipsValidated => session?.isReadyForDraft ?? false;
+
+  /// Mevcut adımın klibinin validate edilip edilmediğini döner.
+  /// "Sonraki Klip" butonunu göstermek için kullanılır.
+  bool get currentClipValidated {
+    final step = currentStep;
+    if (step == null || session == null) return false;
+    return session!.clips.any(
+      (c) => c.stepId == step.id && c.status == ClipStatus.validated,
+    );
+  }
 
   DirectorState copyWith({
     ShootSession? session,
@@ -60,14 +70,19 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
   final Ref _ref;
   static const _uuid = Uuid();
 
+  // A4 FIX: Subscription saklanıyor, dispose()'da iptal ediliyor.
+  StreamSubscription<LiveValidationFeedback>? _liveValidationSub;
+
   DirectorNotifier(this._ref) : super(const DirectorState()) {
     _listenToValidatorFeedback();
   }
 
   void _listenToValidatorFeedback() {
     final validator = _ref.read(validatorAgentProvider);
-    validator.liveValidation.listen((feedback) {
-      state = state.copyWith(liveFeedback: feedback);
+    // A4 FIX: Subscription referansı sakla.
+    _liveValidationSub = validator.liveValidation.listen((feedback) {
+      // mounted guard: dispose sonrası state update'i önle.
+      if (mounted) state = state.copyWith(liveFeedback: feedback);
     });
   }
 
@@ -114,8 +129,28 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
     );
   }
 
+  /// A1 FIX: Rejected clip'i listeden siler.
+  /// Önceki implementasyon yalnızca errorMessage'ı temizliyordu;
+  /// rejected clip listede kalınca isReadyForDraft kalıcı false oluyordu.
   void retakeCurrentClip() {
-    state = state.copyWith(errorMessage: null, isRecording: false);
+    final step = state.currentStep;
+    if (step == null || state.session == null) {
+      state = state.copyWith(errorMessage: null, isRecording: false);
+      return;
+    }
+
+    // Mevcut adıma ait rejected clip'i filtrele.
+    final filteredClips = state.session!.clips
+        .where((c) => c.stepId != step.id)
+        .toList();
+
+    final updatedSession = state.session!.copyWith(clips: filteredClips);
+
+    state = state.copyWith(
+      session: updatedSession,
+      errorMessage: null,
+      isRecording: false,
+    );
   }
 
   void nextStep() {
@@ -137,6 +172,13 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
         checklist: checklist,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    // A4 FIX: Memory leak'i önle — subscription iptal et.
+    _liveValidationSub?.cancel();
+    super.dispose();
   }
 }
 

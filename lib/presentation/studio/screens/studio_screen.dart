@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/entities/user_profile.dart';
+import '../../../core/providers/user_profile_provider.dart';
 import '../providers/studio_provider.dart';
 import '../../director/providers/director_provider.dart';
-import '../../onboarding/providers/onboarding_provider.dart';
 
 class StudioScreen extends ConsumerStatefulWidget {
   const StudioScreen({super.key});
@@ -21,12 +20,12 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
 
   void _startPreview() {
     final directorState = ref.read(directorProvider);
-    if (directorState.session == null) return;
+    final profile = ref.read(userProfileProvider);
+    if (directorState.session == null || profile == null) return;
 
-    // Faz 2'de gerçek UserProfile Firebase'den gelecek
     ref.read(studioProvider.notifier).preparePreview(
           session: directorState.session!,
-          userProfile: _buildProfile(),
+          userProfile: profile,
         );
   }
 
@@ -41,7 +40,20 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
         actions: [
           if (state.phase == StudioPhase.awaitingApproval)
             TextButton(
-              onPressed: () => ref.read(studioProvider.notifier).rejectDraft(),
+              // A3 FIX: rejectDraft + postFrameCallback ile preparePreview yeniden tetikle.
+              onPressed: () {
+                ref.read(studioProvider.notifier).rejectDraft();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final session = ref.read(directorProvider).session;
+                  final profile = ref.read(userProfileProvider);
+                  if (session != null && profile != null) {
+                    ref.read(studioProvider.notifier).preparePreview(
+                          session: session,
+                          userProfile: profile,
+                        );
+                  }
+                });
+              },
               child: const Text(
                 'Reddet',
                 style: TextStyle(color: Color(0xFFE53E3E)),
@@ -61,7 +73,12 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
         _LoadingView(phase: state.phase),
       StudioPhase.draftReady ||
       StudioPhase.awaitingApproval =>
-        _DraftView(state: state, onApprove: _onApprove),
+        _DraftView(
+          state: state,
+          onApprove: _onApprove,
+          // B2: Caption regeneration callback'i
+          onRegenerate: _onRegenerate,
+        ),
       StudioPhase.rendering => _RenderingView(),
       StudioPhase.completed => _CompletedView(state: state),
       StudioPhase.failed => _FailedView(
@@ -73,40 +90,41 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
 
   void _onApprove() {
     final directorState = ref.read(directorProvider);
-    if (directorState.session == null) return;
+    final profile = ref.read(userProfileProvider);
+    if (directorState.session == null || profile == null) return;
+
+    // B1: Kredit yeterliliği kontrolü
+    if (!ref.read(userProfileProvider.notifier).hasEnoughCredits) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Yetersiz kredi. Lütfen kredi satın alın.'),
+          backgroundColor: Color(0xFFE53E3E),
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
       builder: (_) => _CreditConfirmDialog(
         credits: ref.read(studioProvider).creditsRequired,
+        remainingCredits: profile.credits,
         onConfirm: () {
           Navigator.pop(context);
           ref.read(studioProvider.notifier).approveAndRender(
                 session: directorState.session!,
-                userProfile: _buildProfile(),
+                userProfile: profile,
               );
         },
       ),
     );
   }
 
-  // Faz 2'de Firebase'den gelecek — şimdilik onboarding state'inden inşa ediyoruz
-  UserProfile _buildProfile() {
-    final ob = ref.read(onboardingProvider);
-    return UserProfile(
-      id: 'user_001',
-      email: '',
-      businessName: ob.businessName ?? 'İşletmem',
-      sector: ob.availableSectors.firstWhere(
-        (s) => s.id == ob.selectedSectorId,
-        orElse: () => ob.availableSectors.first,
-      ),
-      topProducts: ob.topProducts,
-      vibe: ob.vibe ?? BusinessVibe.friendly,
-      audience: ob.audience ?? TargetAudience.mixed,
-      brandToneAnalysis: ob.brandToneAnalysis,
-      createdAt: DateTime.now(),
-    );
+  /// B2: "Yeniden Yaz" butonundan gelen callback.
+  void _onRegenerate() {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) return;
+    ref.read(studioProvider.notifier).regenerateCaption(userProfile: profile);
   }
 }
 
@@ -141,8 +159,14 @@ class _LoadingView extends StatelessWidget {
 class _DraftView extends StatelessWidget {
   final StudioState state;
   final VoidCallback onApprove;
+  // B2: Caption regeneration callback
+  final VoidCallback onRegenerate;
 
-  const _DraftView({required this.state, required this.onApprove});
+  const _DraftView({
+    required this.state,
+    required this.onApprove,
+    required this.onRegenerate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -200,8 +224,11 @@ class _DraftView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+            // B2: onRegenerate callback ile Gemini'ye yeniden istek at
             TextButton.icon(
-              onPressed: () {},
+              onPressed: state.phase == StudioPhase.generatingCaption
+                  ? null // yükleme sırasında devre dışı
+                  : onRegenerate,
               icon: const Icon(Icons.refresh, size: 16),
               label: const Text('Yeniden Yaz'),
             ),
@@ -282,14 +309,21 @@ class _CompletedView extends StatelessWidget {
               style: Theme.of(context).textTheme.displayLarge,
             ),
             const SizedBox(height: 32),
+            // B3: TODO Phase 2 — share_plus ile caption + video paylaş
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                // TODO Phase 2: share_plus ile Instagram paylaşımı
+                // Share.shareXFiles([XFile(localPath)], text: caption);
+              },
               icon: const Icon(Icons.share),
               label: const Text('Instagram\'a Paylaş'),
             ),
             const SizedBox(height: 12),
+            // B3: TODO Phase 2 — image_picker / gallery_saver ile kaydet
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO Phase 2: GallerySaver.saveVideo(videoUrl)
+              },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
                 side: const BorderSide(color: Color(0xFF2A2A2A)),
@@ -334,9 +368,14 @@ class _FailedView extends StatelessWidget {
 
 class _CreditConfirmDialog extends StatelessWidget {
   final int credits;
+  final int remainingCredits;
   final VoidCallback onConfirm;
 
-  const _CreditConfirmDialog({required this.credits, required this.onConfirm});
+  const _CreditConfirmDialog({
+    required this.credits,
+    required this.remainingCredits,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +384,9 @@ class _CreditConfirmDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text('Render Onayı'),
       content: Text(
-        'Bu içeriği 4K ve AI efektleriyle oluşturmak için $credits kredin kullanılacak. Devam etmek istiyor musun?',
+        'Bu içeriği 4K ve AI efektleriyle oluşturmak için $credits kredin kullanılacak. '
+        'Kalan kredin: $remainingCredits → ${remainingCredits - credits}. '
+        'Devam etmek istiyor musun?',
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       actions: [

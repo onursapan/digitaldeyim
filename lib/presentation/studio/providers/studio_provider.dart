@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/agents/prompter_agent.dart';
 import '../../../core/providers/core_providers.dart';
+import '../../../core/providers/user_profile_provider.dart';
 import '../../../data/repositories/shotstack_service.dart';
 import '../../../domain/entities/shoot_session.dart';
 import '../../../domain/entities/user_profile.dart';
@@ -121,6 +122,30 @@ class StudioNotifier extends StateNotifier<StudioState> {
     _startPolling(jobId);
   }
 
+  /// B2: Mevcut caption'ı yeni bir Gemini isteğiyle yeniden üret.
+  Future<void> regenerateCaption({required UserProfile userProfile}) async {
+    if (state.session == null) return;
+
+    // Spinner göster, eski caption'ı temizle
+    state = state.copyWith(
+      phase: StudioPhase.generatingCaption,
+      generatedCaption: null,
+    );
+
+    final prompter = _ref.read(prompterAgentProvider);
+    final out = await prompter.process(
+      PrompterInput(userProfile: userProfile, session: state.session!),
+    );
+
+    final gemini = _ref.read(geminiServiceProvider);
+    final caption = await gemini.generateCaption(out.geminiPrompt);
+
+    state = state.copyWith(
+      phase: StudioPhase.awaitingApproval,
+      generatedCaption: caption,
+    );
+  }
+
   void _startPolling(String jobId) {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
       final shotstack = _ref.read(shotstackServiceProvider);
@@ -128,6 +153,10 @@ class StudioNotifier extends StateNotifier<StudioState> {
 
       if (job.status == RenderStatus.done) {
         _pollingTimer?.cancel();
+
+        // B1: Render tamamlandı → kredit düş
+        _ref.read(userProfileProvider.notifier).deductCredits(1);
+
         state = state.copyWith(
           phase: StudioPhase.completed,
           finalVideoUrl: job.videoUrl,
@@ -142,11 +171,14 @@ class StudioNotifier extends StateNotifier<StudioState> {
     });
   }
 
+  /// A3 FIX: rejectDraft session'ı korur, sadece taslak alanlarını temizler.
+  /// Screen bunu yakaladığında preparePreview'ı yeniden tetikler.
   void rejectDraft() {
     state = state.copyWith(
       phase: StudioPhase.idle,
       draftVideoPath: null,
       generatedCaption: null,
+      errorMessage: null,
     );
   }
 

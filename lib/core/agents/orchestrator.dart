@@ -26,6 +26,29 @@ class Orchestrator {
 
   void emit(OrchestratorEvent event) => _eventBus.add(event);
 
+  /// İki ajanı sıralı zincirir: agentA output'u → agentB input'u.
+  /// Her ajan tamamlandığında Orchestrator event bus'ına bildirim yayar.
+  /// Faz 1'de StudioNotifier bunu kullanmaz; Faz 2 için plug-in noktası.
+  Future<B> chain<A, B>(
+    BaseAgent<dynamic, A> agentA,
+    dynamic inputA,
+    BaseAgent<A, B> agentB,
+  ) async {
+    final outputA = await agentA.process(inputA);
+    emit(OrchestratorEvent(
+      agentName: agentA.agentName,
+      state: AgentState.success(outputA),
+      payload: outputA,
+    ));
+    final outputB = await agentB.process(outputA);
+    emit(OrchestratorEvent(
+      agentName: agentB.agentName,
+      state: AgentState.success(outputB),
+      payload: outputB,
+    ));
+    return outputB;
+  }
+
   void dispose() {
     for (final sub in _subscriptions) {
       sub.cancel();

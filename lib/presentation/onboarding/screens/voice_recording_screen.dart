@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
+import '../../../core/providers/user_profile_provider.dart';
+import '../../../domain/entities/user_profile.dart';
 import '../providers/onboarding_provider.dart';
 
 class VoiceRecordingScreen extends ConsumerStatefulWidget {
@@ -35,6 +37,27 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
   void dispose() {
     _pulseController.dispose();
     super.dispose();
+  }
+
+  /// B1: UserProfile'ı Onboarding state'inden UserProfileNotifier'a taşır.
+  /// Director ekranı ve Studio ekranı bu provider'dan okur.
+  void _initUserProfile() {
+    final ob = ref.read(onboardingProvider);
+    if (ob.availableSectors.isEmpty) return;
+
+    final sector = ob.availableSectors.firstWhere(
+      (s) => s.id == ob.selectedSectorId,
+      orElse: () => ob.availableSectors.first,
+    );
+
+    ref.read(userProfileProvider.notifier).initialize(
+          businessName: ob.businessName ?? 'İşletmem',
+          sector: sector,
+          topProducts: ob.topProducts,
+          vibe: ob.vibe ?? BusinessVibe.friendly,
+          audience: ob.audience ?? TargetAudience.mixed,
+          brandToneAnalysis: ob.brandToneAnalysis,
+        );
   }
 
   void _toggleRecording() {
@@ -165,6 +188,7 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
                                 .read(onboardingProvider.notifier)
                                 .analyzeVoiceRecording('simulated_audio.m4a');
                             if (context.mounted) {
+                              _initUserProfile();
                               context.go(AppRoutes.director);
                             }
                           }
@@ -173,7 +197,10 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
                   ),
                   const SizedBox(height: 12),
                   TextButton(
-                    onPressed: () => context.go(AppRoutes.director),
+                    onPressed: () {
+                      _initUserProfile();
+                      context.go(AppRoutes.director);
+                    },
                     child: Text(
                       'Şimdilik atla',
                       style: theme.textTheme.bodyMedium?.copyWith(

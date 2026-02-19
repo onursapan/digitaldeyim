@@ -21,7 +21,7 @@ abstract class BaseAgent<Input, Output> {
   }
 
   void emitProcessing() => _emit(AgentState.processing);
-  void emitSuccess() => _emit(AgentState.success);
+  void emitSuccess([dynamic payload]) => _emit(AgentState.success(payload));
   void emitFailure(String reason) => _emit(AgentState.failure(reason));
   void emitIdle() => _emit(AgentState.idle);
 
@@ -32,11 +32,19 @@ class AgentState {
   final AgentStateType type;
   final String? message;
 
-  const AgentState._(this.type, [this.message]);
+  /// Ajan output'unu Orchestrator event'ine taşıyan payload.
+  /// Faz 2'de Orchestrator.chain() ile typed routing için kullanılır.
+  final dynamic payload;
+
+  const AgentState._(this.type, [this.message, this.payload]);
 
   static const AgentState idle = AgentState._(AgentStateType.idle);
   static const AgentState processing = AgentState._(AgentStateType.processing);
-  static const AgentState success = AgentState._(AgentStateType.success);
+
+  /// Başarı durumu — opsiyonel output payload ile.
+  static AgentState success([dynamic payload]) =>
+      AgentState._(AgentStateType.success, null, payload);
+
   static AgentState failure(String msg) =>
       AgentState._(AgentStateType.failure, msg);
 

@@ -39,12 +39,48 @@ class SectorSelectionScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 40),
               if (state.isLoadingSectors)
-                const Center(child: CircularProgressIndicator())
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              // B4: Yükleme hatası → retry butonu
+              else if (state.hasSectorLoadError)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.wifi_off,
+                          color: Colors.white24,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Sektörler yüklenemedi',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Lütfen tekrar deneyin.',
+                          style: TextStyle(color: Colors.white38),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () => ref
+                              .read(onboardingProvider.notifier)
+                              .retryLoadSectors(),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Tekrar Dene'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               else
                 Expanded(
                   child: ListView.separated(
                     itemCount: state.availableSectors.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final sector = state.availableSectors[index];
                       return _SectorCard(

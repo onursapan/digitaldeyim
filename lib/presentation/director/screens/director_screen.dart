@@ -25,14 +25,26 @@ class _DirectorScreenState extends ConsumerState<DirectorScreen> {
   void _initSession() {
     final onboardingState = ref.read(onboardingProvider);
     final sectorId = onboardingState.selectedSectorId;
-    if (sectorId == null) return;
 
-    final sector = onboardingState.availableSectors
-        .firstWhere((s) => s.id == sectorId);
+    // A5 FIX: sectorId null veya bulunamazsa güvenli redirect.
+    if (sectorId == null) {
+      context.go(AppRoutes.sectorSelection);
+      return;
+    }
+
+    final sector = onboardingState.availableSectors.cast<Sector?>().firstWhere(
+      (s) => s?.id == sectorId,
+      orElse: () => null,
+    );
+
+    if (sector == null) {
+      context.go(AppRoutes.sectorSelection);
+      return;
+    }
 
     ref.read(directorProvider.notifier).initSession(
           sector: sector,
-          userId: 'user_001', // Faz 2'de Firebase Auth UID kullanılacak
+          userId: 'user_001', // Faz 2: Firebase Auth UID
         );
   }
 
@@ -335,16 +347,27 @@ class _DirectorPanel extends StatelessWidget {
             ),
           const SizedBox(height: 20),
 
-          // Kayıt / Sonraki / Stüdyoya git
+          // Kayıt / Sonraki Klip / Stüdyoya Git
           if (state.allClipsValidated)
             ElevatedButton.icon(
               onPressed: onGoToStudio,
               icon: const Icon(Icons.auto_awesome),
               label: const Text('Stüdyoya Git'),
             )
+          // A2 FIX: Mevcut klip validate edildiyse "Sonraki Klip" butonunu göster.
+          else if (state.currentClipValidated && !state.isLastStep)
+            ElevatedButton.icon(
+              onPressed: onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF38A169),
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.check_circle_outline, size: 18),
+              label: const Text('Sonraki Klip'),
+            )
           else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Kayıt butonu
                 GestureDetector(
@@ -359,7 +382,7 @@ class _DirectorPanel extends StatelessWidget {
                           : Colors.white,
                       border: Border.all(
                         color: state.isRecording
-                            ? Color(0xFFE53E3E).withValues(alpha: 0.4)
+                            ? const Color(0xFFE53E3E).withValues(alpha: 0.4)
                             : Colors.transparent,
                         width: 4,
                       ),
@@ -371,7 +394,9 @@ class _DirectorPanel extends StatelessWidget {
                                 strokeWidth: 2, color: Colors.black),
                           )
                         : Icon(
-                            state.isRecording ? Icons.stop : Icons.fiber_manual_record,
+                            state.isRecording
+                                ? Icons.stop
+                                : Icons.fiber_manual_record,
                             size: 32,
                             color: Colors.black,
                           ),
