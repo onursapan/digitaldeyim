@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/app_router.dart';
 import '../../../core/providers/user_profile_provider.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../domain/entities/user_profile.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -39,9 +40,9 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
     super.dispose();
   }
 
-  /// B1: UserProfile'ı Onboarding state'inden UserProfileNotifier'a taşır.
-  /// Director ekranı ve Studio ekranı bu provider'dan okur.
-  void _initUserProfile() {
+  /// UserProfile'ı Onboarding state'inden oluşturur ve Firestore'a kaydeder.
+  /// Firebase Auth UID + email kullanır.
+  Future<void> _initUserProfile() async {
     final ob = ref.read(onboardingProvider);
     if (ob.availableSectors.isEmpty) return;
 
@@ -50,7 +51,13 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
       orElse: () => ob.availableSectors.first,
     );
 
-    ref.read(userProfileProvider.notifier).initialize(
+    final currentUser = ref.read(authServiceProvider).currentUser;
+    final uid = currentUser?.uid ?? 'user_001';
+    final email = currentUser?.email ?? '';
+
+    await ref.read(userProfileProvider.notifier).initialize(
+          uid: uid,
+          email: email,
           businessName: ob.businessName ?? 'İşletmem',
           sector: sector,
           topProducts: ob.topProducts,
@@ -188,8 +195,10 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
                                 .read(onboardingProvider.notifier)
                                 .analyzeVoiceRecording('simulated_audio.m4a');
                             if (context.mounted) {
-                              _initUserProfile();
-                              context.go(AppRoutes.director);
+                              await _initUserProfile();
+                              if (context.mounted) {
+                                context.go(AppRoutes.director);
+                              }
                             }
                           }
                         : null,
@@ -197,9 +206,9 @@ class _VoiceRecordingScreenState extends ConsumerState<VoiceRecordingScreen>
                   ),
                   const SizedBox(height: 12),
                   TextButton(
-                    onPressed: () {
-                      _initUserProfile();
-                      context.go(AppRoutes.director);
+                    onPressed: () async {
+                      await _initUserProfile();
+                      if (context.mounted) context.go(AppRoutes.director);
                     },
                     child: Text(
                       'Şimdilik atla',
