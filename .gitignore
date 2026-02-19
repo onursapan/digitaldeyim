@@ -55,3 +55,14 @@ app.*.map.json
 .env
 .env.*
 lib/core/config/env.dart
+
+# Fastlane — local secrets, never commit
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+ios/fastlane/test_output
+ios/AuthKey.p8
+ios/Gemfile.lock
+
+# GitHub Actions — local runner temp files
+.github/actions-temp/

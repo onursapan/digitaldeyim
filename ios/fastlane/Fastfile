@@ -1,0 +1,44 @@
+default_platform(:ios)
+
+platform :ios do
+  # ── TestFlight beta dağıtımı ────────────────────────────────────────────────
+  desc "Build Flutter iOS IPA and upload to TestFlight"
+  lane :beta do
+    # CI ortamında geçici keychain oluştur
+    setup_ci if ENV['CI']
+
+    # Sertifika + provisioning profile'ı private Git repo'dan çek
+    match(
+      type: "appstore",
+      readonly: true,
+      git_url: ENV["MATCH_GIT_URL"],  # GitHub secret olarak set edilmeli
+    )
+
+    # Flutter IPA build
+    build_number = ENV.fetch("FLUTTER_BUILD_NUMBER", "1")
+    flutter_version = ENV.fetch("FLUTTER_VERSION", "1.0.0+1").split("+").first
+
+    sh(
+      "cd .. && flutter build ipa --release " \
+      "--build-number=#{build_number} " \
+      "--build-name=#{flutter_version} " \
+      "--export-method=app-store",
+      log: true
+    )
+
+    # TestFlight'a yükle (build processing bekleme — hızlı pipeline)
+    upload_to_testflight(
+      ipa: "../build/ios/ipa/digitaldeyim.ipa",
+      api_key_path: ENV["ASC_KEY_PATH"],
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,    # Sadece internal group'a — Phase 2'de external
+    )
+  end
+
+  # ── Sadece local build (CI olmadan manuel test için) ─────────────────────────
+  desc "Build IPA locally without uploading"
+  lane :build_local do
+    sh("cd .. && flutter build ipa --release", log: true)
+    UI.success "IPA oluşturuldu: build/ios/ipa/"
+  end
+end
