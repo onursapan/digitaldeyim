@@ -53,6 +53,12 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ürünlerinizi ve mağazanızı çekmek için kamera erişimi gerekiyor.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Marka ses analiziniz ve video sesleriniz için mikrofon erişimi gerekiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Fotoğraflarınızı içerik olarak kullanmak için galeri erişimi gerekiyor.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -1,16 +1,21 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/agents/validator_agent.dart';
 import '../../../core/providers/core_providers.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/camera_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../domain/entities/sector.dart';
 import '../../../domain/entities/shoot_session.dart';
-import 'package:uuid/uuid.dart';
 
 class DirectorState {
   final ShootSession? session;
   final int currentStepIndex;
   final bool isRecording;
   final bool isValidating;
+  final bool isUploading;
   final LiveValidationFeedback? liveFeedback;
   final String? errorMessage;
 
@@ -19,6 +24,7 @@ class DirectorState {
     this.currentStepIndex = 0,
     this.isRecording = false,
     this.isValidating = false,
+    this.isUploading = false,
     this.liveFeedback,
     this.errorMessage,
   });
@@ -37,8 +43,6 @@ class DirectorState {
 
   bool get allClipsValidated => session?.isReadyForDraft ?? false;
 
-  /// Mevcut adımın klibinin validate edilip edilmediğini döner.
-  /// "Sonraki Klip" butonunu göstermek için kullanılır.
   bool get currentClipValidated {
     final step = currentStep;
     if (step == null || session == null) return false;
@@ -52,6 +56,7 @@ class DirectorState {
     int? currentStepIndex,
     bool? isRecording,
     bool? isValidating,
+    bool? isUploading,
     LiveValidationFeedback? liveFeedback,
     String? errorMessage,
   }) {
@@ -60,6 +65,7 @@ class DirectorState {
       currentStepIndex: currentStepIndex ?? this.currentStepIndex,
       isRecording: isRecording ?? this.isRecording,
       isValidating: isValidating ?? this.isValidating,
+      isUploading: isUploading ?? this.isUploading,
       liveFeedback: liveFeedback ?? this.liveFeedback,
       errorMessage: errorMessage,
     );
@@ -70,18 +76,18 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
   final Ref _ref;
   static const _uuid = Uuid();
 
-  // A4 FIX: Subscription saklanıyor, dispose()'da iptal ediliyor.
   StreamSubscription<LiveValidationFeedback>? _liveValidationSub;
 
   DirectorNotifier(this._ref) : super(const DirectorState()) {
     _listenToValidatorFeedback();
   }
 
+  CameraService get _camera => _ref.read(cameraServiceProvider);
+  StorageService get _storage => _ref.read(storageServiceProvider);
+
   void _listenToValidatorFeedback() {
     final validator = _ref.read(validatorAgentProvider);
-    // A4 FIX: Subscription referansı sakla.
     _liveValidationSub = validator.liveValidation.listen((feedback) {
-      // mounted guard: dispose sonrası state update'i önle.
       if (mounted) state = state.copyWith(liveFeedback: feedback);
     });
   }
@@ -98,40 +104,80 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
     state = state.copyWith(session: session, currentStepIndex: 0);
   }
 
-  void startRecording() => state = state.copyWith(isRecording: true);
+  /// Gerçek kamera ile video kaydını başlatır.
+  Future<void> startRecording() async {
+    try {
+      await _camera.startRecording();
+      state = state.copyWith(isRecording: true, errorMessage: null);
+    } on Exception catch (e) {
+      state = state.copyWith(
+        isRecording: false,
+        errorMessage: 'Kamera başlatılamadı: $e',
+      );
+    }
+  }
 
-  Future<void> stopRecordingAndValidate(String videoPath) async {
+  /// Video kaydını durdurur, Validator'a gönderir, Storage'a yükler.
+  Future<void> stopRecordingAndValidate() async {
     state = state.copyWith(isRecording: false, isValidating: true);
 
-    final validator = _ref.read(validatorAgentProvider);
     final currentStep = state.currentStep;
     if (currentStep == null || state.session == null) return;
 
-    final result = await validator.process(ValidatorInput(
-      videoPath: videoPath,
-      checklist: state.session!.sector.directorBrief.checklist,
-    ));
+    try {
+      // 1. Kaydı durdur — gerçek dosya yolu al
+      final videoPath = await _camera.stopRecording();
 
-    final newClip = ShootClip(
-      stepId: currentStep.id,
-      localPath: videoPath,
-      status: result.isValid ? ClipStatus.validated : ClipStatus.rejected,
-      validationResult: result,
-    );
+      // 2. Validator'a gönder
+      final validator = _ref.read(validatorAgentProvider);
+      final result = await validator.process(ValidatorInput(
+        videoPath: videoPath,
+        checklist: state.session!.sector.directorBrief.checklist,
+      ));
 
-    final updatedClips = [...state.session!.clips, newClip];
-    final updatedSession = state.session!.copyWith(clips: updatedClips);
+      // 3. Storage'a yükle (arka planda, UI'yi bloke etmeden)
+      String uploadedPath = videoPath;
+      if (result.isValid) {
+        state = state.copyWith(isValidating: false, isUploading: true);
+        final uid = _ref.read(authServiceProvider).currentUser?.uid ?? 'anon';
+        try {
+          uploadedPath = await _storage.uploadClip(
+            uid: uid,
+            sessionId: state.session!.id,
+            stepId: currentStep.id,
+            file: File(videoPath),
+          );
+        } catch (e) {
+          // Upload başarısız olsa bile local path ile devam et
+          uploadedPath = videoPath;
+        }
+      }
 
-    state = state.copyWith(
-      session: updatedSession,
-      isValidating: false,
-      errorMessage: result.isValid ? null : result.warningMessage,
-    );
+      final newClip = ShootClip(
+        stepId: currentStep.id,
+        localPath: uploadedPath,
+        status: result.isValid ? ClipStatus.validated : ClipStatus.rejected,
+        validationResult: result,
+      );
+
+      final updatedClips = [...state.session!.clips, newClip];
+      final updatedSession = state.session!.copyWith(clips: updatedClips);
+
+      state = state.copyWith(
+        session: updatedSession,
+        isValidating: false,
+        isUploading: false,
+        errorMessage: result.isValid ? null : result.warningMessage,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isValidating: false,
+        isUploading: false,
+        errorMessage: 'Kayıt işlenemedi: $e',
+      );
+    }
   }
 
-  /// A1 FIX: Rejected clip'i listeden siler.
-  /// Önceki implementasyon yalnızca errorMessage'ı temizliyordu;
-  /// rejected clip listede kalınca isReadyForDraft kalıcı false oluyordu.
   void retakeCurrentClip() {
     final step = state.currentStep;
     if (step == null || state.session == null) {
@@ -139,7 +185,6 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
       return;
     }
 
-    // Mevcut adıma ait rejected clip'i filtrele.
     final filteredClips = state.session!.clips
         .where((c) => c.stepId != step.id)
         .toList();
@@ -176,8 +221,8 @@ class DirectorNotifier extends StateNotifier<DirectorState> {
 
   @override
   void dispose() {
-    // A4 FIX: Memory leak'i önle — subscription iptal et.
     _liveValidationSub?.cancel();
+    _camera.dispose();
     super.dispose();
   }
 }
