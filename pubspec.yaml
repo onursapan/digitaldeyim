@@ -74,6 +74,14 @@ dev_dependencies:
   freezed: ^2.5.8
   json_serializable: ^6.9.4
   retrofit_generator: ^9.1.9
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 flutter:
   uses-material-design: true
@@ -82,3 +90,4 @@ flutter:
     - assets/images/
     - assets/animations/
     - assets/sector_configs/
+    - assets/icon/ # BURAYI DA EKLEDİK
