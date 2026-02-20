@@ -17,23 +17,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  Future<void> _handleDevSignIn() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final user = await ref.read(authServiceProvider).signInAnonymously();
-      if (user != null && mounted) {
-        context.go(AppRoutes.sectorSelection);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _errorMessage = 'Dev girişi başarısız: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _handleDevSignIn() {
+    // Firebase bypass — devModeProvider'ı true yaparak router guard'ı atlatır.
+    ref.read(devModeProvider.notifier).state = true;
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -173,7 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (kDebugMode) ...[
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: _isLoading ? null : _handleDevSignIn,
+                  onPressed: _handleDevSignIn,
                   child: const Text(
                     'Dev Girişi (Anonim)',
                     style: TextStyle(
