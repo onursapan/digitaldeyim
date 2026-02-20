@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:349706854240:android:c9c4b9a6f10bb391bb4805",
+        "mobilesdk_app_id": "1:349706854240:android:a1b0555f24b18cdbbb4805",
         "android_client_info": {
-          "package_name": "com.example.digitaldeyim"
+          "package_name": "com.digitaldeyim.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "349706854240-k4bblr9k196irucnn146lg2jd86mk30n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.digitaldeyim.app",
+            "certificate_hash": "7a97babe1823ed25d1a07c975cddd2b30b558d8b"
+          }
+        },
+        {
+          "client_id": "349706854240-09tov0eid9lgmq7i8lbd34v6o8bdqjgm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAywuPLNiIXyHBh0FJ6jF_B8fUveegrjWA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "349706854240-09tov0eid9lgmq7i8lbd34v6o8bdqjgm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "349706854240-fvnooiu4libk7o52ip0khuokihm2q3ov.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.digitaldeyim.app"
+              }
+            }
+          ]
         }
       }
     }

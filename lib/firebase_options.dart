@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAywuPLNiIXyHBh0FJ6jF_B8fUveegrjWA',
-    appId: '1:349706854240:android:c9c4b9a6f10bb391bb4805',
+    appId: '1:349706854240:android:a1b0555f24b18cdbbb4805',
     messagingSenderId: '349706854240',
     projectId: 'digitaldeyim',
     storageBucket: 'digitaldeyim.firebasestorage.app',
@@ -59,10 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDbVNrsjv0g0_cwikEhznLK8iUVVlIClxY',
-    appId: '1:349706854240:ios:7d96bb90a0d4a6febb4805',
+    appId: '1:349706854240:ios:01a98dbef0f3ffe2bb4805',
     messagingSenderId: '349706854240',
     projectId: 'digitaldeyim',
     storageBucket: 'digitaldeyim.firebasestorage.app',
-    iosBundleId: 'com.example.digitaldeyim',
+    iosBundleId: 'com.digitaldeyim.app',
+    clientId: '349706854240-fvnooiu4libk7o52ip0khuokihm2q3ov.apps.googleusercontent.com',
   );
 }

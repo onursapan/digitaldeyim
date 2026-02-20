@@ -11,7 +11,11 @@ final authStateProvider = StreamProvider<User?>((ref) {
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // serverClientId → Android'de idToken üretimi için Web OAuth client (type 3) zorunlu.
+  // iOS'ta CLIENT_ID, GoogleService-Info.plist'ten otomatik okunur.
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '349706854240-09tov0eid9lgmq7i8lbd34v6o8bdqjgm.apps.googleusercontent.com',
+  );
   final Logger _log = Logger();
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();

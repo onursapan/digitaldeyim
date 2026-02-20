@@ -10,6 +10,10 @@ import '../presentation/studio/screens/studio_screen.dart';
 import '../presentation/onboarding/providers/onboarding_provider.dart';
 import '../core/services/auth_service.dart';
 
+/// Debug modda Firebase auth'u bypass eden provider.
+/// "Dev Girişi" butonuna basınca true olur, router auth guard'ı atlar.
+final devModeProvider = StateProvider<bool>((ref) => false);
+
 class AppRoutes {
   static const login = '/login';
   static const sectorSelection = '/';
@@ -26,13 +30,15 @@ class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
     _ref.listen(authStateProvider, (prev, next) => notifyListeners());
     _ref.listen(onboardingProvider, (prev, next) => notifyListeners());
+    _ref.listen(devModeProvider, (prev, next) => notifyListeners());
   }
 
   String? redirect(BuildContext context, GoRouterState state) {
     final authAsync = _ref.read(authStateProvider);
     final onboarding = _ref.read(onboardingProvider);
+    final devMode = _ref.read(devModeProvider);
 
-    final isLoggedIn = authAsync.valueOrNull != null;
+    final isLoggedIn = authAsync.valueOrNull != null || devMode;
     final isOnLogin = state.matchedLocation == AppRoutes.login;
     const onboardingRoutes = {
       AppRoutes.sectorSelection,
