@@ -64,6 +64,5 @@ class DefaultFirebaseOptions {
     projectId: 'digitaldeyim',
     storageBucket: 'digitaldeyim.firebasestorage.app',
     iosBundleId: 'com.digitaldeyim.app',
-    clientId: '349706854240-fvnooiu4libk7o52ip0khuokihm2q3ov.apps.googleusercontent.com',
   );
 }
